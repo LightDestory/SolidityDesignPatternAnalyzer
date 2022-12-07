@@ -11,3 +11,4 @@ contract SimpleRandom {
         return uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, block.difficulty)));
     }
 }
+
