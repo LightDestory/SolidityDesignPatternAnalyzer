@@ -1,21 +1,23 @@
 import logging
+from pathlib import Path
 
 from colorama import init
 from termcolor import colored
 
+from modules.config import settings
 from modules.descriptor_validator import DescriptorValidator
+from modules.plotter import Plotter
 from modules.solidity_scanner import SolidityScanner
-from modules.utils.utils import bootstrap, format_results, save_results
+from modules.utils.utils import bootstrap, format_results, save_results, ask_confirm
 
 logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
-
-
-
+logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
+logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 
 
 def main() -> None:
-    inputs: dict[str, str] = bootstrap(default_schema="./modules/data/descriptor_schema.json",
-                                       default_descriptor="./descriptors/")
+    inputs: dict[str, str] = bootstrap(default_schema=Path("./modules/data/descriptor_schema.json"),
+                                       default_descriptor=Path("./descriptors/"))
     desc_validator = DescriptorValidator(inputs["descriptor"])
     logging.info(colored("Loading schema...", "yellow"))
     if not desc_validator.load_schema(schema_path=inputs["schema"]):
@@ -35,6 +37,8 @@ def main() -> None:
     analysis_results: dict[str, dict[str, int]] = scanner.get_design_pattern_statistics()
     logging.info(format_results(analysis_results))
     save_results(inputs["target"], analysis_results)
+    if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
+        Plotter(analysis_results).plot_results()
 
 
 if __name__ == '__main__':

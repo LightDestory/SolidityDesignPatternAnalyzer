@@ -2,7 +2,6 @@ import json
 import logging
 from json import JSONDecodeError
 from pathlib import Path
-from typing import IO
 
 from jsonschema import validate, SchemaError, ValidationError
 from termcolor import colored
@@ -26,16 +25,13 @@ class DescriptorValidator:
         error: str = ""
         try:
             if settings.verbose:
-                logging.debug(colored("Parsing schema: '{}' ...".format(schema_path), "blue"))
-            schema_fp: IO = open(schema_path, "r")
-            self._descriptor_schema = json.load(schema_fp)
-            schema_fp.close()
+                logging.debug(colored(f"Parsing schema: '{schema_path}' ...", "blue"))
+            with open(schema_path, "r") as schema_fp:
+                self._descriptor_schema = json.load(schema_fp)
         except OSError as fp_error:
-            error = "An error occurred while trying to open the file '{}', aborting...\n{}" \
-                .format(schema_path, fp_error)
+            error = f"An error occurred while trying to open the file '{schema_path}', aborting...\n{fp_error}"
         except JSONDecodeError as json_error:
-            error = "An error occurred while trying to parse the json content of '{}', aborting...\n{}" \
-                .format(schema_path, json_error.msg)
+            error = f"An error occurred while trying to parse the json content of '{schema_path}', aborting...\n{json_error.msg} "
         finally:
             if not error:
                 if settings.verbose:
@@ -72,28 +68,24 @@ class DescriptorValidator:
             error: str = ""
             try:
                 if settings.verbose:
-                    logging.debug(colored("Checking descriptor: '{}' ...".format(descriptor_path), "blue"))
-                descriptor_fp: IO = open(descriptor_path, "r")
-                descriptor_object = json.load(descriptor_fp)
-                descriptor_fp.close()
+                    logging.debug(colored(f"Checking descriptor: '{descriptor_path}' ...", "blue"))
+                with open(descriptor_path, "r") as descriptor_fp:
+                    descriptor_object = json.load(descriptor_fp)
                 validate(instance=descriptor_object, schema=self._descriptor_schema)
                 if settings.verbose:
-                    logging.debug(colored("{} - Descriptor has been deserialized and validated successfully!"
-                                          .format(descriptor_object["name"]), "green"))
+                    logging.debug(colored(f"{descriptor_object['name']} - Descriptor has been deserialized and "
+                                          "validated successfully!", "green"))
                 descriptors.append(descriptor_object)
             except OSError as fp_error:
-                error = "An error occurred while trying to open the file '{}', skipping...\n{}" \
-                    .format(descriptor_path, fp_error)
+                error = f"An error occurred while trying to open the file '{descriptor_path}', skipping...\n{fp_error}"
             except JSONDecodeError as json_error:
-                error = "An error occurred while trying to parse the json content of '{}', skipping...\n{}" \
-                    .format(descriptor_path, json_error.msg)
+                error = f"An error occurred while trying to parse the json content of '{descriptor_path}', skipping...\n{json_error.msg}"
             except SchemaError as schema_error:
                 logging.error(colored("The provided descriptor schema is not valid, please check compliance with "
-                                      "Draft-07, aborting...\n{}".format(schema_error.message), "red"))
+                                      f"Draft-07, aborting...\n{schema_error.message}", "red"))
                 break
             except ValidationError as validation_error:
-                error = "The descriptor '{}' is not valid, skipping...\n{}"\
-                    .format(descriptor_path, validation_error.message)
+                error = f"The descriptor '{descriptor_path}' is not valid, skipping...\n{validation_error.message}"
             finally:
                 if error:
                     logging.error(colored(error, "red"))

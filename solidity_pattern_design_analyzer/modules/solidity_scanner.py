@@ -1,5 +1,4 @@
 import logging
-import pprint
 
 from termcolor import colored
 
@@ -23,12 +22,12 @@ class SolidityScanner:
         """
         try:
             if settings.verbose:
-                logging.debug(colored("Parsing solidity source code file: '{}' ...".format(solidity_file_path), "blue"))
+                logging.debug(colored(f"Parsing solidity source code file: '{solidity_file_path}' ...", "blue"))
             self._visitor = parser.objectify(
                 parser.parse_file(solidity_file_path))  # ObjectifySourceUnitVisitor
         except Exception as ex:
-            logging.error(colored("An unhandled error occurred while trying to parse the solidity file '{}', "
-                                  "aborting...\n{}".format(solidity_file_path, ex), "red"))
+            logging.error(colored(f"An unhandled error occurred while trying to parse the solidity file '{solidity_file_path}', "
+                                  f"aborting...\n{ex}", "red"))
             return False
         if settings.verbose:
             logging.debug(colored("Solidity source code parsed successfully!", "green"))
@@ -44,8 +43,8 @@ class SolidityScanner:
             if pragma["name"] == "solidity":
                 loaded_version = pragma["value"]
         if loaded_version != settings.solidity_version and not settings.allow_incompatible:
-            logging.warning(colored("Loaded Version: '{}'\tCompatible Version: '{}'"
-                                    .format(loaded_version, settings.solidity_version), "magenta"))
+            logging.warning(colored(f"Loaded Version: '{loaded_version}'\tCompatible Version: '{settings.solidity_version}'"
+                                    , "magenta"))
             logging.warning(colored("The provided solidity source code file's version is not compatible.", "magenta"))
             user_confirm: bool = ask_confirm("Proceed anyway?")
             if not user_confirm:
@@ -62,7 +61,7 @@ class SolidityScanner:
         operand_type: str = wrapped_operand["type"] if wrapped_operand["type"] else "Identifier"
         match operand_type:
             case "MemberAccess":
-                return "{}.{}".format(wrapped_operand["expression"]["name"], wrapped_operand["memberName"])
+                return f"{wrapped_operand['expression']['name']}.{wrapped_operand['memberName']}"
             case "FunctionCall":
                 return wrapped_operand["expression"]["name"]
             case "Identifier":
@@ -153,11 +152,11 @@ class SolidityScanner:
         validated_checks: int = 0
         descriptor: dict = self._descriptors[descriptor_index]
         if settings.verbose:
-            logging.debug(colored("Executing descriptor: '{}' ...".format(descriptor["name"]), "blue"))
+            logging.debug(colored(f"Executing descriptor: '{descriptor['name']}' ...", "blue"))
         for check in descriptor["checks"]:
             check_type: str = check["check_type"]
             if settings.verbose:
-                logging.debug(colored("Testing check: '{}' ...".format(check_type), "blue"))
+                logging.debug(colored(f"Testing check: '{check_type}' ...", "blue"))
             check_result: bool = False
             match check_type:
                 case "inheritance":
@@ -171,8 +170,7 @@ class SolidityScanner:
                                                                        operand_1=check["operand_1"],
                                                                        operand_2=check["operand_2"])
                 case _:
-                    logging.error(colored("The check-type: '{}' has not been implemented yet!".format(check_type),
-                                          "red"))
+                    logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
             if settings.verbose:
                 if check_result:
                     logging.debug(colored("Test passed!", "green"))
@@ -187,7 +185,7 @@ class SolidityScanner:
         :param smart_contract_name: The name of the smart contract to analyze
         :return: A dictionary containing the usage statistics of each provided descriptor for the selected smart-contract
         """
-        logging.info(colored("Analyzing smart-contract: '{}' ...".format(smart_contract_name), "cyan"))
+        logging.info(colored(f"Analyzing smart-contract: '{smart_contract_name}' ...", "cyan"))
         results: dict[str, int] = {}
         for (descriptor_index, descriptor_name) in enumerate(map(lambda d: d["name"], self._descriptors)):
             results[descriptor_name] = self._execute_descriptor(smart_contract_name=smart_contract_name,

@@ -1,13 +1,13 @@
 import argparse
 import logging
-from pathlib import Path
 
+from pathlib import Path
 from termcolor import colored
 
 from modules.config import settings
 
 
-def bootstrap(default_schema: str, default_descriptor: str) -> dict[str, str]:
+def bootstrap(default_schema: Path, default_descriptor: Path) -> dict[str, str]:
     """
     This function parses the user's input and, if validated, return them in a dictionary
     :param default_schema: Path to the default schema
@@ -17,7 +17,7 @@ def bootstrap(default_schema: str, default_descriptor: str) -> dict[str, str]:
     parser = argparse.ArgumentParser(
         description='A cli utility that performs a static analysis of solidity source code to find design patterns '
                     'usage',
-        epilog="Version: {} - Developed by Alessio Tudisco for Bachelor Thesis".format(settings.version))
+        epilog=f"Version: {settings.version} - Developed by Alessio Tudisco for Bachelor Thesis")
     parser.add_argument('-t', "--target", required=True, help="Path of a solidity source code file")
     parser.add_argument('-s', "--schema", required=False, default=default_schema,
                         help="Path of a JSON-Schema to validate descriptors")
@@ -49,37 +49,38 @@ def is_input_valid(inputs: dict[str, str]) -> bool:
     """
     for input_type, input_value in inputs.items():
         input_path = Path(input_value)
+        error: str = ""
         if settings.verbose:
-            logging.debug(colored("Checking {}: '{}' ...".format(input_type, input_path), "blue"))
+            logging.debug(colored(f"Checking {input_type}: '{input_path}' ...", "blue"))
         if not input_path.exists():
-            logging.error(colored("The input '{}' does not exist, aborting...".format(input_value), "red"))
-            return False
-        if input_type == "target" or input_type == "schema":
+            error = f"The input '{input_value}' does not exist, aborting..."
+        elif input_type == "target" or input_type == "schema":
             if not input_path.is_file():
-                logging.error(colored("The input '{}' is not a file, aborting...".format(input_value), "red"))
-                return False
-            if input_type == "target" and not input_path.name.split(".")[-1] == "sol":
-                logging.error(colored("The input '{}' is not a solidity source code file, aborting..."
-                                      .format(input_value), "red"))
-                return False
-            if input_type == "schema" and not input_path.name.split(".")[-1] == "json":
-                logging.error(colored("The input '{}' is not a json schema file, aborting..."
-                                      .format(input_value), "red"))
-                return False
+                error = f"The input '{input_value}' is not a file, aborting..."
+            elif input_type == "target" and not input_path.name.split(".")[-1] == "sol":
+                error = f"The input '{input_value}' is not a solidity source code file, aborting..."
+            elif input_type == "schema" and not input_path.name.split(".")[-1] == "json":
+                error = f"The input '{input_value}' is not a json schema file, aborting..."
         else:
             if input_path.is_file() and not input_path.name.split(".")[-1] == "json":
-                logging.error(colored("The input '{}' is not a design pattern descriptor json file, aborting..."
-                                      .format(input_value), "red"))
-                return False
+                error = f"The input '{input_value}' is not a design pattern descriptor json file, aborting..."
+        if error:
+            logging.error(colored(error, "red"))
+            return False
     if settings.verbose:
         logging.debug(colored("The user's input has been validated successfully, ready to operate!", "green"))
     return True
 
 
 def ask_confirm(question_text: str) -> bool:
+    """
+    This function asks a yes/no query to the user
+    :param question_text: A yes/no query for the user
+    :return: True if it is confirmed, False otherwise
+    """
     while True:
         try:
-            answer: str = input(colored("{} [y/n]: ".format(question_text), "magenta")).lower()
+            answer: str = input(colored(f"{question_text} [y/n]: ", "magenta")).lower()
             if answer == "y" or answer == "n":
                 if answer == "y":
                     return True
@@ -92,8 +93,19 @@ def ask_confirm(question_text: str) -> bool:
 
 
 def save_results(target: str, results: dict[str, dict[str, int]]) -> None:
-    # TO-DO
-    return
+    """
+    This function saves to the disk the computation's results
+    :param target: The solidity source code path
+    :param results: A dictionary containing the results of the static analysis
+    """
+    target_path: Path = Path(target)
+    output_path: Path = Path(f"{target_path.parent}/results_{target_path.stem}.json")
+    try:
+        with open(output_path, "w") as output_fp:
+            output_fp.write(str(results))
+            logging.info(colored(f"Results saved to: '{output_path}'", "green"))
+    except IOError as fp_error:
+        logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
 
 
 def format_results(results: dict[str, dict[str, int]]) -> str:
@@ -104,10 +116,9 @@ def format_results(results: dict[str, dict[str, int]]) -> str:
     """
     styled_results: str = colored("\n|--- Results ---|\n\n", "green")
     for smart_contract in results.keys():
-        styled_results = "{}{}{}\n".format(styled_results, colored("Smart-Contract: ", "green"),
-                                           colored(smart_contract, "yellow"))
+        styled_results = f"{styled_results}{colored('Smart-Contract: ', 'green')}{colored(smart_contract, 'yellow')}\n"
         for descriptor, passed_tests in results[smart_contract].items():
-            styled_results = "{}\t{}{}\n\t\tMay {} used ({} checks passed)\n" \
-                .format(styled_results, colored("Descriptor: ", "green"), colored(descriptor, "yellow"),
-                        "be" if passed_tests > 0 else "be not", colored(str(passed_tests), "magenta"))
+            styled_results = f'{styled_results}\t{colored("Descriptor: ", "green")}{colored(descriptor, "yellow")}' \
+                             f'\n\t\tMay {"be" if passed_tests > 0 else "be not"} used ' \
+                             f'({colored(str(passed_tests), "magenta")} checks passed)\n'
     return styled_results
