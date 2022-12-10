@@ -5,6 +5,7 @@ from termcolor import colored
 
 from modules.solidity_parser import parser
 from modules.config import settings
+from modules.utils.utils import ask_confirm
 
 
 class SolidityScanner:
@@ -46,19 +47,10 @@ class SolidityScanner:
             logging.warning(colored("Loaded Version: '{}'\tCompatible Version: '{}'"
                                     .format(loaded_version, settings.solidity_version), "magenta"))
             logging.warning(colored("The provided solidity source code file's version is not compatible.", "magenta"))
-            while True:
-                try:
-                    answer: str = input(colored("Proceed anyway? [y/n]: ", "magenta")).lower()
-                    if answer == "y" or answer == "n":
-                        if answer == "y":
-                            break
-                        else:
-                            logging.info(colored("Aborting...", "yellow"))
-                            return False
-                except KeyboardInterrupt:
-                    print("\n")  # Fixes no new line after input's prompts
-                    logging.info(colored("KeyboardInterrupt intercepted, aborting...", "yellow"))
-                    return False
+            user_confirm: bool = ask_confirm("Proceed anyway?")
+            if not user_confirm:
+                logging.info(colored("Aborting...", "yellow"))
+            return user_confirm
         return True
 
     def _get_condition_operand(self, wrapped_operand: dict) -> str:
@@ -90,17 +82,29 @@ class SolidityScanner:
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
-        for function in smart_contract_node.functions:
-            for statement in smart_contract_node.functions[function]._node.body.statements:
-                if statement["type"] == "IfStatement" and statement["condition"]["operator"] == "==" \
-                        and statement["condition"]["type"] == "BinaryOperation":
-                    smart_contract_operand_1: str = self._get_condition_operand(statement["condition"]["right"]).lower()
-                    smart_contract_operand_2: str = self._get_condition_operand(statement["condition"]["left"]).lower()
-                    if not smart_contract_operand_1 or not smart_contract_operand_2:
-                        return False
-                    if (smart_contract_operand_1 == operand_1 and smart_contract_operand_2 == operand_2) \
-                            or (smart_contract_operand_1 == operand_2 and smart_contract_operand_2 == operand_1):
-                        return True
+        functions_statements: list[list[dict]] = [fun._node.body.statements for fun in smart_contract_node.functions.values()]
+        modifiers_statements: list[list[dict]] = [mod._node.body.statements for mod in smart_contract_node.modifiers.values()]
+        statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
+        statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
+        smart_contract_equality_operands: list[tuple] = list()
+        for statement in statements:
+            if statement["type"] == "IfStatement" and statement["condition"]["operator"] == "==" and \
+                    statement["condition"]["type"] == "BinaryOperation":
+                smart_contract_equality_operands.append((
+                    self._get_condition_operand(statement["condition"]["right"]).lower(),
+                    self._get_condition_operand(statement["condition"]["left"]).lower()))
+            if statement["type"] == "ExpressionStatement" and "arguments" in statement["expression"]:
+                for argument in statement["expression"]["arguments"]:
+                    if "operator" in argument and argument["operator"] == "==" and argument["type"] == "BinaryOperation":
+                        smart_contract_equality_operands.append((
+                            self._get_condition_operand(argument["right"]).lower(),
+                            self._get_condition_operand(argument["left"]).lower()))
+        if not smart_contract_equality_operands:
+            return False
+        for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_equality_operands:
+            if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
+                    or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
+                return True
         return False
 
     def _test_inheritance_check(self, smart_contract_name: str, parent_names: list[str]) -> bool:
@@ -132,7 +136,7 @@ class SolidityScanner:
                 smart_contract_modifiers.add(modifier.name.lower())
         for modifier in filter(lambda d: "*" in d, modifiers):
             for smart_contract_modifier in smart_contract_modifiers:
-                if str.replace("*", "", modifier) in smart_contract_modifier:
+                if modifier.replace("*", "") in smart_contract_modifier:
                     return True
         for modifier in filter(lambda d: "*" not in d, modifiers):
             if modifier in smart_contract_modifiers:
