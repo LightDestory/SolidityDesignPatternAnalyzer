@@ -1,0 +1,9 @@
+{
+    "name": "Access Restriction",
+    "checks": [
+        {
+            "check_type": "modifier",
+            "modifiers": ["when*", "after*", "before*","only*", "if*", "on*"]
+        }
+    ]
+}

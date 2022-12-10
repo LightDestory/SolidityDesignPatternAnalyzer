@@ -1,0 +1,18 @@
+{
+    "name": "Ownership",
+    "checks": [
+        {
+            "check_type": "inheritance",
+            "parent_names": ["ownable", "ownership", "owner"]
+        },
+        {
+            "check_type": "modifier",
+            "modifiers": ["onlyowner", "only_owner", "owner", "owned"]
+        },
+        {
+            "check_type": "equality_condition",
+            "operand_1": "msg.sender",
+            "operand_2": "owner"
+        }
+    ]
+}
