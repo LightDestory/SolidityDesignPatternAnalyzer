@@ -1,0 +1,11 @@
+{
+    "name": "Balance Limit",
+    "checks": [
+        {
+            "check_type": "comparison",
+            "operator": "<=",
+            "operand_1": "balance",
+            "operand_2": "limit"
+        }
+    ]
+}

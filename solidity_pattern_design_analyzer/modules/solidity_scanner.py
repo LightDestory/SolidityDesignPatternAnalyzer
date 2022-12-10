@@ -1,4 +1,5 @@
 import logging
+import pprint
 
 from termcolor import colored
 
@@ -26,8 +27,9 @@ class SolidityScanner:
             self._visitor = parser.objectify(
                 parser.parse_file(solidity_file_path))  # ObjectifySourceUnitVisitor
         except Exception as ex:
-            logging.error(colored(f"An unhandled error occurred while trying to parse the solidity file '{solidity_file_path}', "
-                                  f"aborting...\n{ex}", "red"))
+            logging.error(
+                colored(f"An unhandled error occurred while trying to parse the solidity file '{solidity_file_path}', "
+                        f"aborting...\n{ex}", "red"))
             return False
         if settings.verbose:
             logging.debug(colored("Solidity source code parsed successfully!", "green"))
@@ -43,8 +45,9 @@ class SolidityScanner:
             if pragma["name"] == "solidity":
                 loaded_version = pragma["value"]
         if loaded_version != settings.solidity_version and not settings.allow_incompatible:
-            logging.warning(colored(f"Loaded Version: '{loaded_version}'\tCompatible Version: '{settings.solidity_version}'"
-                                    , "magenta"))
+            logging.warning(
+                colored(f"Loaded Version: '{loaded_version}'\tCompatible Version: '{settings.solidity_version}'"
+                        , "magenta"))
             logging.warning(colored("The provided solidity source code file's version is not compatible.", "magenta"))
             user_confirm: bool = ask_confirm("Proceed anyway?")
             if not user_confirm:
@@ -52,7 +55,7 @@ class SolidityScanner:
             return user_confirm
         return True
 
-    def _get_condition_operand(self, wrapped_operand: dict) -> str:
+    def _get_operand(self, wrapped_operand: dict) -> str:
         """
         This functions unwraps a condition operand and returns the string literal
         :param wrapped_operand: The operand object of a condition
@@ -61,7 +64,9 @@ class SolidityScanner:
         operand_type: str = wrapped_operand["type"] if wrapped_operand["type"] else "Identifier"
         match operand_type:
             case "MemberAccess":
-                return f"{wrapped_operand['expression']['name']}.{wrapped_operand['memberName']}"
+                name: str = f"{wrapped_operand['expression']['name']}." if "name" in wrapped_operand['expression'] \
+                    else ""
+                return f"{name}{wrapped_operand['memberName']}"
             case "FunctionCall":
                 return wrapped_operand["expression"]["name"]
             case "Identifier":
@@ -69,41 +74,51 @@ class SolidityScanner:
             case _:
                 return ""
 
-    def _test_equality_condition_check(self, smart_contract_name: str, operand_1: str, operand_2: str) -> bool:
+    def _test_comparison_check(self, smart_contract_name: str, operator: str, operand_1: str, operand_2: str) -> bool:
         """
-        This function executes the equality_condition check: it looks for equality comparison between the two provided
+        This function executes the comparison check: it looks for comparison between the two provided
         operands
         :param smart_contract_name: The name of the smart contract to analyze
         :param operand_1: A equality comparison operand
         :param operand_2: A equality comparison operand
-        :return: True if the equality_condition check is valid, False otherwise
+        :return: True if the comparison check is valid, False otherwise
         """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
-        functions_statements: list[list[dict]] = [fun._node.body.statements for fun in smart_contract_node.functions.values()]
-        modifiers_statements: list[list[dict]] = [mod._node.body.statements for mod in smart_contract_node.modifiers.values()]
+        functions_statements: list[list[dict]] = [fun._node.body.statements for fun in
+                                                  smart_contract_node.functions.values()]
+        modifiers_statements: list[list[dict]] = [mod._node.body.statements for mod in
+                                                  smart_contract_node.modifiers.values()]
         statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
         statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
         smart_contract_equality_operands: list[tuple] = list()
         for statement in statements:
-            if statement["type"] == "IfStatement" and statement["condition"]["operator"] == "==" and \
+            if statement["type"] == "IfStatement" and statement["condition"]["operator"] == operator and \
                     statement["condition"]["type"] == "BinaryOperation":
                 smart_contract_equality_operands.append((
-                    self._get_condition_operand(statement["condition"]["right"]).lower(),
-                    self._get_condition_operand(statement["condition"]["left"]).lower()))
+                    self._get_operand(statement["condition"]["right"]).lower(),
+                    self._get_operand(statement["condition"]["left"]).lower()))
             if statement["type"] == "ExpressionStatement" and "arguments" in statement["expression"]:
                 for argument in statement["expression"]["arguments"]:
-                    if "operator" in argument and argument["operator"] == "==" and argument["type"] == "BinaryOperation":
+                    if "operator" in argument and argument["operator"] == operator and \
+                            argument["type"] == "BinaryOperation":
                         smart_contract_equality_operands.append((
-                            self._get_condition_operand(argument["right"]).lower(),
-                            self._get_condition_operand(argument["left"]).lower()))
+                            self._get_operand(argument["left"]).lower(),
+                            self._get_operand(argument["right"]).lower()))
         if not smart_contract_equality_operands:
             return False
         for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_equality_operands:
-            if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
-                    or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
-                return True
+            match operator:
+                case "==":
+                    if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
+                            or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
+                        return True
+                case "<=" | ">=":
+                    if operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2:
+                        return True
+                case _:
+                    return False
         return False
 
     def _test_inheritance_check(self, smart_contract_name: str, parent_names: list[str]) -> bool:
@@ -142,6 +157,23 @@ class SolidityScanner:
                 return True
         return False
 
+    def _test_rejector_check(self, smart_contract_name) -> bool:
+        """
+        This function executes the rejector check: it looks if the contract implements only a rejection fallback
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the rejector check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        smart_contract_functions: list[str] = list(smart_contract_node.functions.keys())
+        if len(smart_contract_functions) == 1 \
+                and smart_contract_functions[0] == "fallback"\
+                and smart_contract_node.functions["fallback"].isFallback:
+            for statement in smart_contract_node.functions["fallback"]._node.body.statements:
+                if statement["type"] == "ExpressionStatement":
+                    if self._get_operand(statement["expression"]) == "revert":
+                        return True
+        return False
+
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> int:
         """
         This function tests all the selected descriptor's checks
@@ -165,10 +197,13 @@ class SolidityScanner:
                 case "modifier":
                     check_result = self._test_modifier_check(smart_contract_name=smart_contract_name,
                                                              modifiers=check["modifiers"])
-                case "equality_condition":
-                    check_result = self._test_equality_condition_check(smart_contract_name=smart_contract_name,
-                                                                       operand_1=check["operand_1"],
-                                                                       operand_2=check["operand_2"])
+                case "comparison":
+                    check_result = self._test_comparison_check(smart_contract_name=smart_contract_name,
+                                                               operator=check["operator"],
+                                                               operand_1=check["operand_1"],
+                                                               operand_2=check["operand_2"])
+                case "rejector":
+                    check_result = self._test_rejector_check(smart_contract_name=smart_contract_name)
                 case _:
                     logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
             if settings.verbose:
@@ -201,4 +236,3 @@ class SolidityScanner:
         for smart_contract_name in self._visitor.contracts.keys():
             results[smart_contract_name] = self._find_design_pattern_usage(smart_contract_name=smart_contract_name)
         return results
-

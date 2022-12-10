@@ -1,0 +1,8 @@
+{
+    "name": "Rejector",
+    "checks": [
+        {
+            "check_type": "rejector"
+        }
+    ]
+}

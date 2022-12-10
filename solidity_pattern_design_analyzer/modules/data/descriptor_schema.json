@@ -60,7 +60,10 @@
             "properties": {
               "check_type": {
                 "type": "string",
-                "const": "equality_condition"
+                "const": "comparison"
+              },
+              "operator": {
+                "type": "string"
               },
               "operand_1": {
                 "type": "string"
@@ -71,8 +74,21 @@
             },
             "required": [
               "check_type",
+              "operator",
               "operand_1",
               "operand_2"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "rejector"
+              }
+            },
+            "required": [
+              "check_type"
             ]
           }
         ]

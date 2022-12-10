@@ -10,7 +10,8 @@
             "modifiers": ["onlyowner", "only_owner", "owner", "owned"]
         },
         {
-            "check_type": "equality_condition",
+            "check_type": "comparison",
+            "operator": "==",
             "operand_1": "msg.sender",
             "operand_2": "owner"
         }

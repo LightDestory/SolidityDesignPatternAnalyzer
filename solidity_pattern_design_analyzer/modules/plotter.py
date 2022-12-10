@@ -1,7 +1,8 @@
-import json
+import logging
 
 import numpy as np
 from matplotlib import pyplot as plt
+from termcolor import colored
 
 
 class Plotter:
@@ -49,4 +50,9 @@ class Plotter:
         plt.xlabel('Smart-Contracts')
         plt.title("Analyzer Results")
         plt.legend(stats_per_descriptor.keys())
-        plt.show()
+        try:
+            logging.info(colored("Displaying barplot...", "green"))
+            plt.show()
+        except KeyboardInterrupt:
+            print("\n")  # Fixes no new line after input's prompts
+            logging.info(colored("KeyboardInterrupt intercepted, aborting...", "yellow"))
