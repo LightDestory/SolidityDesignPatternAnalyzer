@@ -25,7 +25,7 @@ class SolidityScanner:
             if settings.verbose:
                 logging.debug(colored(f"Parsing solidity source code file: '{solidity_file_path}' ...", "blue"))
             self._visitor = parser.objectify(
-                parser.parse_file(solidity_file_path))  # ObjectifySourceUnitVisitor
+                parser.parse_file(solidity_file_path, loc=True))  # ObjectifySourceUnitVisitor
         except Exception as ex:
             logging.error(
                 colored(f"An unhandled error occurred while trying to parse the solidity file '{solidity_file_path}', "
@@ -55,6 +55,21 @@ class SolidityScanner:
             return user_confirm
         return True
 
+    def _get_statements(self, smart_contract_name: str) -> list[dict]:
+        """
+        This function retrieves all the statements of a specific smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A list of all the first-level statements
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        functions_statements: list[list[dict]] = [fun._node.body.statements for fun in
+                                                  smart_contract_node.functions.values()]
+        modifiers_statements: list[list[dict]] = [mod._node.body.statements for mod in
+                                                  smart_contract_node.modifiers.values()]
+        statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
+        statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
+        return statements
+
     def _get_operand(self, wrapped_operand: dict) -> str:
         """
         This functions unwraps a condition operand and returns the string literal
@@ -83,23 +98,20 @@ class SolidityScanner:
         :param operand_2: A equality comparison operand
         :return: True if the comparison check is valid, False otherwise
         """
-        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        statements: list[dict] = self._get_statements(smart_contract_name=smart_contract_name)
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
-        functions_statements: list[list[dict]] = [fun._node.body.statements for fun in
-                                                  smart_contract_node.functions.values()]
-        modifiers_statements: list[list[dict]] = [mod._node.body.statements for mod in
-                                                  smart_contract_node.modifiers.values()]
-        statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
-        statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
         smart_contract_equality_operands: list[tuple] = list()
         for statement in statements:
-            if statement["type"] == "IfStatement" and statement["condition"]["operator"] == operator and \
-                    statement["condition"]["type"] == "BinaryOperation":
-                smart_contract_equality_operands.append((
-                    self._get_operand(statement["condition"]["right"]).lower(),
-                    self._get_operand(statement["condition"]["left"]).lower()))
-            if statement["type"] == "ExpressionStatement" and "arguments" in statement["expression"]:
+            print("\n")
+            pprint.pprint(statement)
+            if statement["type"] == "IfStatement" or (statement["type"] == "ReturnStatement" and "condition" in statement["expression"]):
+                condition: dict = statement["condition"]  if  statement["type"] == "IfStatement" else statement["expression"]["condition"]
+                if "operator" in condition and condition["operator"] == operator and condition["type"] == "BinaryOperation":
+                    smart_contract_equality_operands.append((
+                        self._get_operand(condition["right"]).lower(),
+                        self._get_operand(condition["left"]).lower()))
+            elif statement["type"] == "ExpressionStatement" and "arguments" in statement["expression"]:
                 for argument in statement["expression"]["arguments"]:
                     if "operator" in argument and argument["operator"] == operator and \
                             argument["type"] == "BinaryOperation":

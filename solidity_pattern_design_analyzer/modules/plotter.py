@@ -45,6 +45,7 @@ class Plotter:
         for name, values in stats_per_descriptor.items():
             plt.bar(x + (width * counter), values, width=width, edgecolor="black", label=name)
             counter += 1
+        plt.yticks(range(0, max(map(lambda d: max(stats_per_descriptor[d]), stats_per_descriptor))+1))
         plt.xticks(x, smart_contracts)
         plt.ylabel('Passed Tests')
         plt.xlabel('Smart-Contracts')

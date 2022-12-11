@@ -1,0 +1,15 @@
+{
+    "name": "Auto Deprecation",
+    "checks": [
+        {
+            "check_type": "modifier",
+            "modifiers": ["willDeprecate", "whenDeprecated"]
+        },
+        {
+            "check_type": "comparison",
+            "operator": ">",
+            "operand_1": "timestamp",
+            "operand_2": "expire"
+        }
+    ]
+}
