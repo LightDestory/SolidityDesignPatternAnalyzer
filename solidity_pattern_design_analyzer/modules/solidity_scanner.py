@@ -72,7 +72,7 @@ class SolidityScanner:
 
     def _get_operand(self, wrapped_operand: dict) -> str:
         """
-        This functions unwraps a condition operand and returns the string literal
+        This function unwraps a condition operand and returns the string literal
         :param wrapped_operand: The operand object of a condition
         :return: The operand string literal
         """
@@ -89,6 +89,24 @@ class SolidityScanner:
             case _:
                 return ""
 
+    def _get_reversed_operand(self, operator: str) -> str:
+        """
+        This function returns the logical reversed operator
+        :param operator: An operation operator
+        :return: The reserved operator
+        """
+        match operator:
+            case ">":
+                return "<"
+            case ">":
+                return ">"
+            case "<=":
+                return ">="
+            case ">=":
+                return "<="
+            case _:  # "=="
+                return "=="
+
     def _test_comparison_check(self, smart_contract_name: str, operator: str, operand_1: str, operand_2: str) -> bool:
         """
         This function executes the comparison check: it looks for comparison between the two provided
@@ -101,19 +119,21 @@ class SolidityScanner:
         statements: list[dict] = self._get_statements(smart_contract_name=smart_contract_name)
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
+        operators: list[str] = [operator, self._get_reversed_operand(operator)]
         smart_contract_equality_operands: list[tuple] = list()
         for statement in statements:
-            print("\n")
-            pprint.pprint(statement)
-            if statement["type"] == "IfStatement" or (statement["type"] == "ReturnStatement" and "condition" in statement["expression"]):
-                condition: dict = statement["condition"]  if  statement["type"] == "IfStatement" else statement["expression"]["condition"]
-                if "operator" in condition and condition["operator"] == operator and condition["type"] == "BinaryOperation":
+            if statement["type"] == "IfStatement" or (
+                    statement["type"] == "ReturnStatement" and "condition" in statement["expression"]):
+                condition: dict = statement["condition"] if statement["type"] == "IfStatement" else \
+                    statement["expression"]["condition"]
+                if "operator" in condition and condition["operator"] in operators and condition[
+                    "type"] == "BinaryOperation":
                     smart_contract_equality_operands.append((
                         self._get_operand(condition["right"]).lower(),
                         self._get_operand(condition["left"]).lower()))
             elif statement["type"] == "ExpressionStatement" and "arguments" in statement["expression"]:
                 for argument in statement["expression"]["arguments"]:
-                    if "operator" in argument and argument["operator"] == operator and \
+                    if "operator" in argument and argument["operator"] in operators and \
                             argument["type"] == "BinaryOperation":
                         smart_contract_equality_operands.append((
                             self._get_operand(argument["left"]).lower(),
@@ -126,11 +146,10 @@ class SolidityScanner:
                     if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
                             or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
                         return True
-                case "<=" | ">=":
-                    if operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2:
-                        return True
                 case _:
-                    return False
+                    if (operator == operators[0] and (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2))\
+                            or (operator == operators[1] and ( operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2)):
+                        return True
         return False
 
     def _test_inheritance_check(self, smart_contract_name: str, parent_names: list[str]) -> bool:
@@ -178,7 +197,7 @@ class SolidityScanner:
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         smart_contract_functions: list[str] = list(smart_contract_node.functions.keys())
         if len(smart_contract_functions) == 1 \
-                and smart_contract_functions[0] == "fallback"\
+                and smart_contract_functions[0] == "fallback" \
                 and smart_contract_node.functions["fallback"].isFallback:
             for statement in smart_contract_node.functions["fallback"]._node.body.statements:
                 if statement["type"] == "ExpressionStatement":
