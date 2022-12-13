@@ -90,6 +90,30 @@
             "required": [
               "check_type"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "tight_variable_packing"
+              }
+            },
+            "required": [
+              "check_type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "memory_array_building"
+              }
+            },
+            "required": [
+              "check_type"
+            ]
           }
         ]
       },

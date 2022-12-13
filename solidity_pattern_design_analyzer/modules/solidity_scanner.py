@@ -25,7 +25,7 @@ class SolidityScanner:
             if settings.verbose:
                 logging.debug(colored(f"Parsing solidity source code file: '{solidity_file_path}' ...", "blue"))
             self._visitor = parser.objectify(
-                parser.parse_file(solidity_file_path, loc=True))  # ObjectifySourceUnitVisitor
+                parser.parse_file(solidity_file_path, loc=False))  # ObjectifySourceUnitVisitor
         except Exception as ex:
             logging.error(
                 colored(f"An unhandled error occurred while trying to parse the solidity file '{solidity_file_path}', "
@@ -69,6 +69,26 @@ class SolidityScanner:
         statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
         statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
         return statements
+
+    def _get_data_type_size(self, data_type_name: str) -> int:
+        """
+        This function returns the byte-size of a specified solidity data type
+        :param data_type_name: The data type name
+        :return: A integer corresponding to the data type's byte size
+        """
+        match data_type_name:
+            case "address":
+                return 20
+            case "string":
+                return 32
+            case "integer" if "int" in data_type_name:
+                int_size: str = data_type_name.replace("u", "").replace("int", "")
+                return 32 if int_size == "" else int(int_size) / 8
+            case "byte" if "byte" in data_type_name:
+                byte_size: str = data_type_name.replace("s", "").replace("byte", "")
+                return 1 if byte_size == "" else int(byte_size)
+            case _:  # bool
+                return 1
 
     def _get_operand(self, wrapped_operand: dict) -> str:
         """
@@ -147,8 +167,10 @@ class SolidityScanner:
                             or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
                         return True
                 case _:
-                    if (operator == operators[0] and (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2))\
-                            or (operator == operators[1] and ( operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2)):
+                    if (operator == operators[0] and (
+                            operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2)) \
+                            or (operator == operators[1] and (
+                            operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2)):
                         return True
         return False
 
@@ -205,6 +227,43 @@ class SolidityScanner:
                         return True
         return False
 
+    def _test_tight_variable_packing_check(self, smart_contract_name) -> bool:
+        """
+        This function executes the tight_variable_packing check: it looks for a struct definition which size is <= 32 bytes
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the tight_variable_packing check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        for struct_name in smart_contract_node.structs:
+            struct_size: int = 0
+            members: list[dict] = smart_contract_node.structs[struct_name]["members"]
+            for member in members:
+                if (member["typeName"]["type"] != "ElementaryTypeName") or ("fixed" in member["typeName"]["name"]):
+                    struct_size = -1
+                    break
+                else:
+                    struct_size += self._get_data_type_size(member["typeName"]["name"])
+            if struct_size <= 32:
+                return True
+        return False
+
+    def _test_memory_array_building_check(self, smart_contract_name) -> bool:
+        """
+        This function executes the memory_array_building check: it looks a view function with returns a memory array
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the memory_array_building check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        for function in smart_contract_node.functions:
+            function_node: dict = smart_contract_node.functions[function]._node
+            if function_node["stateMutability"] == "view":
+                return_statements: dict = {}
+                #pprint.pprint(return_statements)
+                """for statement in function_node["body"]["statements"]:
+                    print("\n")
+                    pprint.pprint(statement)"""
+        return False
+
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> int:
         """
         This function tests all the selected descriptor's checks
@@ -235,6 +294,10 @@ class SolidityScanner:
                                                                operand_2=check["operand_2"])
                 case "rejector":
                     check_result = self._test_rejector_check(smart_contract_name=smart_contract_name)
+                case "tight_variable_packing":
+                    check_result = self._test_tight_variable_packing_check(smart_contract_name=smart_contract_name)
+                case "memory_array_building":
+                    check_result = self._test_memory_array_building_check(smart_contract_name=smart_contract_name)
                 case _:
                     logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
             if settings.verbose:

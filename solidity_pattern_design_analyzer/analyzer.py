@@ -35,6 +35,9 @@ def main() -> None:
         exit(-1)
     logging.info(colored("Searching for design patterns...", "yellow"))
     analysis_results: dict[str, dict[str, int]] = scanner.get_design_pattern_statistics()
+    if not analysis_results:
+        logging.error(colored("No smart-contract found!, aborting...", "red"))
+        exit(-1)
     logging.info(format_results(analysis_results))
     save_results(inputs["target"], analysis_results)
     if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):

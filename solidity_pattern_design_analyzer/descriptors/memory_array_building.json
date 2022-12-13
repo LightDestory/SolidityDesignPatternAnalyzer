@@ -1,0 +1,8 @@
+{
+    "name": "Memory Array Building",
+    "checks": [
+        {
+            "check_type": "memory_array_building"
+        }
+    ]
+}

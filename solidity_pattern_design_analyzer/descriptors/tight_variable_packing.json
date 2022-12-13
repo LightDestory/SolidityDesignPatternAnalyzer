@@ -1,0 +1,8 @@
+{
+    "name": "Tight Variable Packing",
+    "checks": [
+        {
+            "check_type": "tight_variable_packing"
+        }
+    ]
+}
