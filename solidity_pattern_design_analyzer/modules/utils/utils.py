@@ -1,5 +1,7 @@
 import argparse
 import logging
+import operator
+from functools import reduce
 
 from pathlib import Path
 from termcolor import colored
@@ -51,7 +53,7 @@ def is_input_valid(inputs: dict[str, str]) -> bool:
         input_path = Path(input_value)
         error: str = ""
         if settings.verbose:
-            logging.debug(colored(f"Checking {input_type}: '{input_path}' ...", "blue"))
+            logging.debug("{} '{}'".format(colored(f"Checking {input_type}:", "blue"), colored(input_value, "cyan")))
         if not input_path.exists():
             error = f"The input '{input_value}' does not exist, aborting..."
         elif input_type == "target" or input_type == "schema":
@@ -92,7 +94,7 @@ def ask_confirm(question_text: str) -> bool:
             return False
 
 
-def save_results(target: str, results: dict[str, dict[str, int]]) -> None:
+def save_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) -> None:
     """
     This function saves to the disk the computation's results
     :param target: The solidity source code path
@@ -103,12 +105,12 @@ def save_results(target: str, results: dict[str, dict[str, int]]) -> None:
     try:
         with open(output_path, "w") as output_fp:
             output_fp.write(str(results))
-            logging.info(colored(f"Results saved to: '{output_path}'", "green"))
+            logging.info("{} '{}'".format(colored("Results saved to:", "green"), colored(str(output_path), "cyan")))
     except IOError as fp_error:
         logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
 
 
-def format_results(results: dict[str, dict[str, int]]) -> str:
+def format_results(results: dict[str, dict[str, dict[str, bool]]]) -> str:
     """
     Formats the results on the terminal
     :param results: A dictionary containing the results of the static analysis
@@ -117,8 +119,12 @@ def format_results(results: dict[str, dict[str, int]]) -> str:
     styled_results: str = colored("\n|--- Results ---|\n\n", "green")
     for smart_contract in results.keys():
         styled_results = f"{styled_results}{colored('Smart-Contract: ', 'green')}{colored(smart_contract, 'yellow')}\n"
-        for descriptor, passed_tests in results[smart_contract].items():
+        for descriptor, checks in results[smart_contract].items():
+            passed_tests: int = int(reduce(operator.add, checks.values()))
             styled_results = f'{styled_results}\t{colored("Descriptor: ", "green")}{colored(descriptor, "yellow")}' \
                              f'\n\t\tMay {"be" if passed_tests > 0 else "be not"} used ' \
                              f'({colored(str(passed_tests), "magenta")} checks passed)\n'
+            for check, validated in checks.items():
+                styled_results = f"{styled_results}\t\t\tTest '{colored(check, 'yellow')}':\t" \
+                                 f"{colored('passed', 'green') if validated else colored('failed', 'red')}\n"
     return styled_results

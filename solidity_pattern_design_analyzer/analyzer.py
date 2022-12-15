@@ -34,7 +34,7 @@ def main() -> None:
     if not scanner.is_version_compatible():
         exit(-1)
     logging.info(colored("Searching for design patterns...", "yellow"))
-    analysis_results: dict[str, dict[str, int]] = scanner.get_design_pattern_statistics()
+    analysis_results: dict[str, dict[str, dict[str, bool]]] = scanner.get_design_pattern_statistics()
     if not analysis_results:
         logging.error(colored("No smart-contract found!, aborting...", "red"))
         exit(-1)

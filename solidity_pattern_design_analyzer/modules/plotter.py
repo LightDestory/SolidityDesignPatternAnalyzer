@@ -1,4 +1,6 @@
 import logging
+import operator
+from functools import reduce
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -6,9 +8,9 @@ from termcolor import colored
 
 
 class Plotter:
-    _packed_data: dict[str, dict[str, int]]
+    _packed_data: dict[str, dict[str, dict[str, bool]]]
 
-    def __init__(self, packed_data: dict[str, dict[str, int]]) -> None:
+    def __init__(self, packed_data: dict[str, dict[str, dict[str, bool]]]) -> None:
         self._packed_data = packed_data
 
     def _get_descriptors(self) -> list[str]:
@@ -27,7 +29,8 @@ class Plotter:
         for descriptor in self._get_descriptors():
             grouping: list[int] = []
             for smart_contract in self._packed_data.keys():
-                grouping.append(self._packed_data[smart_contract][descriptor])
+                passed_tests: int = int(reduce(operator.add, self._packed_data[smart_contract][descriptor].values()))
+                grouping.append(passed_tests)
             stats[descriptor] = grouping
         return stats
 

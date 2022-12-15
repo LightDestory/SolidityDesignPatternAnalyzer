@@ -23,7 +23,8 @@ class SolidityScanner:
         """
         try:
             if settings.verbose:
-                logging.debug(colored(f"Parsing solidity source code file: '{solidity_file_path}' ...", "blue"))
+                logging.debug("{} '{}'".format(colored("Parsing solidity source code file:", "blue"),
+                                               colored(solidity_file_path, "cyan")))
             self._visitor = parser.objectify(
                 parser.parse_file(solidity_file_path, loc=False))  # ObjectifySourceUnitVisitor
         except Exception as ex:
@@ -45,15 +46,69 @@ class SolidityScanner:
             if pragma["name"] == "solidity":
                 loaded_version = pragma["value"]
         if loaded_version != settings.solidity_version and not settings.allow_incompatible:
-            logging.warning(
-                colored(f"Loaded Version: '{loaded_version}'\tCompatible Version: '{settings.solidity_version}'"
-                        , "magenta"))
+            logging.warning("{} '{}'\t{} '{}'".format(
+                colored("Compatible Version:", "magenta"),
+                colored(settings.solidity_version, "cyan"),
+                colored("Loaded Version:", "magenta"),
+                colored(loaded_version, "cyan")
+            ))
             logging.warning(colored("The provided solidity source code file's version is not compatible.", "magenta"))
             user_confirm: bool = ask_confirm("Proceed anyway?")
             if not user_confirm:
                 logging.info(colored("Aborting...", "yellow"))
             return user_confirm
         return True
+
+    def _find_literal(self, search_for: list[str], search_in: list[str]) -> bool:
+        """
+        This function checks if one of the provided item is a sub string or an item of a provided collection
+        :param search_for: The list of items to find
+        :param search_in: The list of items to search on
+        :return: True if there is a match, False otherwise
+        """
+        for pattern_str in filter(lambda d: "*" in d, search_for):
+            if settings.verbose:
+                logging.debug("{} '{}'".format(colored("Found literal pattern:", "magenta"),
+                                               colored(pattern_str, "cyan")))
+            for smart_contract_item in search_in:
+                if settings.verbose:
+                    logging.debug("\t{} '{}'".format(colored("Comparing literal pattern with", "magenta"),
+                                                     colored(smart_contract_item, "cyan")))
+                if pattern_str.replace("*", "") in smart_contract_item:
+                    return True
+        for item in filter(lambda d: "*" not in d, search_for):
+            if settings.verbose:
+                logging.debug("{} '{}' {}".format(
+                    colored("Found literal: ", "magenta"),
+                    colored(item, "cyan"),
+                    colored(", checking if it is used", "magenta")))
+            if item in search_in:
+                return True
+        return False
+
+    def _get_base_contracts_name(self, smart_contract_name: str) -> list[str]:
+        """
+        This function returns the first-level parent (inheritance) of a specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A list of smart-contracts name
+        """
+        parents: list[str] = list()
+        for smart_contract_parent in self._visitor.contracts[smart_contract_name]._node.baseContracts:
+            parents.append(smart_contract_parent.baseName.namePath)
+        return parents
+
+    def _get_modifiers_name(self, smart_contract_name: str) -> list[str]:
+        """
+        This function returns the modifiers name defined or used in the specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A list of modifiers name
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        smart_contract_modifiers: list[str] = list(smart_contract_node.modifiers.keys())
+        for function in smart_contract_node.functions:
+            for modifier in smart_contract_node.functions[function]._node.modifiers:
+                smart_contract_modifiers.append(modifier.name)
+        return smart_contract_modifiers
 
     def _get_statements(self, smart_contract_name: str) -> list[dict]:
         """
@@ -109,7 +164,7 @@ class SolidityScanner:
             case _:
                 return ""
 
-    def _get_reversed_operand(self, operator: str) -> str:
+    def _get_comparison_reverse_operator(self, operator: str) -> str:
         """
         This function returns the logical reversed operator
         :param operator: An operation operator
@@ -139,7 +194,7 @@ class SolidityScanner:
         statements: list[dict] = self._get_statements(smart_contract_name=smart_contract_name)
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
-        operators: list[str] = [operator, self._get_reversed_operand(operator)]
+        operators: list[str] = [operator, self._get_comparison_reverse_operator(operator)]
         smart_contract_equality_operands: list[tuple] = list()
         for statement in statements:
             if statement["type"] == "IfStatement" or (
@@ -181,12 +236,9 @@ class SolidityScanner:
         :param parent_names: A list of parents' name to look for
         :return: True if the inheritance check is valid, False otherwise
         """
-        smart_contract_node = self._visitor.contracts[smart_contract_name]
-        parents_name = list(map(lambda d: d.lower(), parent_names))
-        for smart_contract_parent in smart_contract_node._node.baseContracts:
-            if smart_contract_parent.baseName.namePath.lower() in parents_name:
-                return True
-        return False
+        parents_names = list(map(lambda d: d.lower(), parent_names))
+        smart_contract_parents: list[str] = list(map(lambda d: d.lower(), self._get_base_contracts_name(smart_contract_name=smart_contract_name)))
+        return self._find_literal(search_for=parents_names, search_in=smart_contract_parents)
 
     def _test_modifier_check(self, smart_contract_name: str, modifiers: list[str]) -> bool:
         """
@@ -195,20 +247,9 @@ class SolidityScanner:
         :param modifiers: A list of modifiers' name to look for
         :return: True if the modifier check is valid, False otherwise
         """
-        smart_contract_node = self._visitor.contracts[smart_contract_name]
-        modifiers = list(map(lambda d: d.lower(), modifiers))
-        smart_contract_modifiers: set[str] = set(map(lambda d: d.lower(), smart_contract_node.modifiers.keys()))
-        for function in smart_contract_node.functions:
-            for modifier in smart_contract_node.functions[function]._node.modifiers:
-                smart_contract_modifiers.add(modifier.name.lower())
-        for modifier in filter(lambda d: "*" in d, modifiers):
-            for smart_contract_modifier in smart_contract_modifiers:
-                if modifier.replace("*", "") in smart_contract_modifier:
-                    return True
-        for modifier in filter(lambda d: "*" not in d, modifiers):
-            if modifier in smart_contract_modifiers:
-                return True
-        return False
+        modifiers: list[str] = list(map(lambda d: d.lower(), modifiers))
+        smart_contract_modifiers: list[str] = list(set(map(lambda d: d.lower(), self._get_modifiers_name(smart_contract_name=smart_contract_name))))
+        return self._find_literal(search_for=modifiers, search_in=smart_contract_modifiers)
 
     def _test_rejector_check(self, smart_contract_name) -> bool:
         """
@@ -258,27 +299,28 @@ class SolidityScanner:
             function_node: dict = smart_contract_node.functions[function]._node
             if function_node["stateMutability"] == "view":
                 return_statements: dict = {}
-                #pprint.pprint(return_statements)
+                # pprint.pprint(return_statements)
                 """for statement in function_node["body"]["statements"]:
                     print("\n")
                     pprint.pprint(statement)"""
         return False
 
-    def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> int:
+    def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
         This function tests all the selected descriptor's checks
         :param smart_contract_name: The name of the smart contract to analyze
         :param descriptor_index: The index of the descriptor to execute
-        :return: The number of descriptor's passed checks
+        :return: The validated status for each descriptor's checks
         """
-        validated_checks: int = 0
+        results: dict[str, bool] = {}
         descriptor: dict = self._descriptors[descriptor_index]
         if settings.verbose:
-            logging.debug(colored(f"Executing descriptor: '{descriptor['name']}' ...", "blue"))
+            logging.debug("{} '{}'".format(colored(f"Executing descriptor:", "blue"),
+                                           colored(descriptor['name'], "cyan")))
         for check in descriptor["checks"]:
             check_type: str = check["check_type"]
             if settings.verbose:
-                logging.debug(colored(f"Testing check: '{check_type}' ...", "blue"))
+                logging.debug("{} '{}'".format(colored(f"Testing check:", "blue"), colored(check_type,"cyan")))
             check_result: bool = False
             match check_type:
                 case "inheritance":
@@ -305,28 +347,30 @@ class SolidityScanner:
                     logging.debug(colored("Test passed!", "green"))
                 else:
                     logging.debug(colored("Test failed!", "red"))
-            validated_checks += int(check_result)
-        return validated_checks
+            results[check_type] = check_result
+        return results
 
-    def _find_design_pattern_usage(self, smart_contract_name: str) -> dict[str, int]:
+    def _find_design_pattern_usage(self, smart_contract_name: str) -> dict[str, dict[str, bool]]:
         """
         This function executes the provided descriptors against the selected smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
         :return: A dictionary containing the usage statistics of each provided descriptor for the selected smart-contract
         """
-        logging.info(colored(f"Analyzing smart-contract: '{smart_contract_name}' ...", "cyan"))
-        results: dict[str, int] = {}
+        logging.info("{} '{}'".format(colored("Analyzing smart-contract: ", "yellow"),
+                                      colored(smart_contract_name, "cyan")))
+        results: dict[str, dict[str, bool]] = {}
         for (descriptor_index, descriptor_name) in enumerate(map(lambda d: d["name"], self._descriptors)):
             results[descriptor_name] = self._execute_descriptor(smart_contract_name=smart_contract_name,
                                                                 descriptor_index=descriptor_index)
         return results
 
-    def get_design_pattern_statistics(self) -> dict[str, dict[str, int]]:
+    def get_design_pattern_statistics(self) -> dict[str, dict[str, dict[str, bool]]]:
         """
         This function looks for design pattern usages in each provided smart-contract and return a statistic based on
-        provided descriptors' checks :return: A dictionary containing the statistics for each provided smart-contract
+        provided descriptors' checks
+        :return: A dictionary containing the statistics for each provided smart-contract
         """
-        results: dict[str, dict[str, int]] = {}
+        results: dict[str, dict[str, dict[str, bool]]] = {}
         for smart_contract_name in self._visitor.contracts.keys():
             results[smart_contract_name] = self._find_design_pattern_usage(smart_contract_name=smart_contract_name)
         return results
