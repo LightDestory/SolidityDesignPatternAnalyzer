@@ -139,8 +139,8 @@ class SolidityScanner:
         :param node: The node to analyze
         :return: A stringed node
         """
-        expression_type: str = node["type"] if "type" in node else ""
-        match expression_type:
+        node_type: str = node["type"] if "type" in node else ""
+        match node_type:
             case "ReturnStatement":
                 return self._build_return_statement_string(node)
             case "EmitStatement":
@@ -235,13 +235,35 @@ class SolidityScanner:
                 smart_contract_modifiers.append(modifier.name)
         return smart_contract_modifiers
 
-    def _filter_statements_by_type(self, statements: list[dict], type_filter: str) -> list[dict]:
-        return None
+    def _find_node_by_type(self, node: dict, type_filter: str) -> dict | None:
+        """
+        This function recursively inspects a node to find a specific sub-node
+        :param node: The node to analyze
+        :return: The note itself or None
+        """
+        node_type: str = node["type"] if "type" in node else ""
+        if node_type == type_filter:
+            return node
+        else:
+            match node_type:
+                case "ReturnStatement":
+                    return self._find_node_by_type(node["expression"], type_filter)
+                case "EmitStatement":
+                    return self._find_node_by_type(node["eventCall"], type_filter)
+                case "ExpressionStatement":
+                    return self._find_node_by_type(node["expression"], type_filter)
+                case "FunctionCall":
+                    return self._find_node_by_type(node["arguments"], type_filter)
+                case "IfStatement":
+                    return self._find_node_by_type(node["condition"], type_filter)
+                case _:
+                    return None
 
-    def _get_statements(self, smart_contract_name: str) -> list[dict]:
+    def _get_statements(self, smart_contract_name: str, type_filter: str = "") -> list[dict]:
         """
         This function retrieves all the statements of a specific smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
+        :param type_filter: A filter to et only specific statements
         :return: A list of all the first-level statements
         """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
@@ -255,7 +277,18 @@ class SolidityScanner:
             print(colored("Found statement:", "red"))
             pprint.pprint(statement)
             print("{} {}".format(colored("Rebuilt string:", "green"), colored(self._build_node_string(statement), "yellow")))
-        return statements
+        if not type_filter:
+            return statements
+        else:
+            filtered_statements: list[dict] = list()
+            print(f"Looking for {type_filter}")
+            for statement in statements:
+                filtered: dict | None = self._find_node_by_type(statement, type_filter)
+                if filtered:
+                    filtered_statements.append(filtered)
+                    pprint.pprint(filtered)
+            return filtered_statements
+
 
     def _get_data_type_size(self, data_type_name: str) -> int:
         """
@@ -327,32 +360,19 @@ class SolidityScanner:
         :param operand_2: A equality comparison operand
         :return: True if the comparison check is valid, False otherwise
         """
-        binary_operation_node: list[dict] = self._filter_statements_by_type(
-            statements=self._get_statements(smart_contract_name=smart_contract_name), type_filter="BinaryOperation")
+        binary_operation_node: list[dict] = self._get_statements(smart_contract_name=smart_contract_name,
+                                                                 type_filter="BinaryOperation")
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
         operators: list[str] = [operator, self._get_comparison_reverse_operator(operator)]
-        smart_contract_equality_operands: list[tuple] = list()
-        for statement in binary_operation_node:
-            if statement["type"] == "IfStatement" or (
-                    statement["type"] == "ReturnStatement" and "condition" in statement["expression"]):
-                condition: dict = statement["condition"] if statement["type"] == "IfStatement" else \
-                    statement["expression"]["condition"]
-                if "operator" in condition and condition["operator"] in operators and condition[
-                    "type"] == "BinaryOperation":
-                    smart_contract_equality_operands.append((
-                        self._get_binary_operation_operand(condition["right"]).lower(),
-                        self._get_binary_operation_operand(condition["left"]).lower()))
-            elif statement["type"] == "ExpressionStatement" and "arguments" in statement["expression"]:
-                for argument in statement["expression"]["arguments"]:
-                    if "operator" in argument and argument["operator"] in operators and \
-                            argument["type"] == "BinaryOperation":
-                        smart_contract_equality_operands.append((
-                            self._get_binary_operation_operand(argument["left"]).lower(),
-                            self._get_binary_operation_operand(argument["right"]).lower()))
-        if not smart_contract_equality_operands:
+        smart_contract_operation_operands: list[tuple] = list()
+        for operation in binary_operation_node:
+            smart_contract_operation_operands.append((
+                self._get_binary_operation_operand(operation["right"]).lower(),
+                self._get_binary_operation_operand(operation["left"]).lower()))
+        if not smart_contract_operation_operands:
             return False
-        for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_equality_operands:
+        for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_operation_operands:
             match operator:
                 case "==":
                     if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
