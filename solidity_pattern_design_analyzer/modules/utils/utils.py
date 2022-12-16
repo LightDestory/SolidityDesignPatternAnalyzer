@@ -1,6 +1,8 @@
 import argparse
+import json
 import logging
 import operator
+import pprint
 from functools import reduce
 
 from pathlib import Path
@@ -104,7 +106,7 @@ def save_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) ->
     output_path: Path = Path(f"{target_path.parent}/results_{target_path.stem}.json")
     try:
         with open(output_path, "w") as output_fp:
-            output_fp.write(str(results))
+            output_fp.write(json.dumps(results))
             logging.info("{} '{}'".format(colored("Results saved to:", "green"), colored(str(output_path), "cyan")))
     except IOError as fp_error:
         logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
