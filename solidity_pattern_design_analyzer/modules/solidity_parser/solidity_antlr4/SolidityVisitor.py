@@ -1,4 +1,4 @@
-# Generated from solidity-antlr4/Solidity.g4 by ANTLR 4.9.3
+# Generated from solidity-antlr4/Solidity.g4 by ANTLR 4.11.1
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .SolidityParser import SolidityParser
@@ -96,6 +96,11 @@ class SolidityVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by SolidityParser#usingForDeclaration.
     def visitUsingForDeclaration(self, ctx:SolidityParser.UsingForDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SolidityParser#usingForObject.
+    def visitUsingForObject(self, ctx:SolidityParser.UsingForObjectContext):
         return self.visitChildren(ctx)
 
 
@@ -271,6 +276,11 @@ class SolidityVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by SolidityParser#inlineAssemblyStatement.
     def visitInlineAssemblyStatement(self, ctx:SolidityParser.InlineAssemblyStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SolidityParser#inlineAssemblyStatementFlag.
+    def visitInlineAssemblyStatementFlag(self, ctx:SolidityParser.InlineAssemblyStatementFlagContext):
         return self.visitChildren(ctx)
 
 
@@ -461,11 +471,6 @@ class SolidityVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by SolidityParser#tupleExpression.
     def visitTupleExpression(self, ctx:SolidityParser.TupleExpressionContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SolidityParser#typeNameExpression.
-    def visitTypeNameExpression(self, ctx:SolidityParser.TypeNameExpressionContext):
         return self.visitChildren(ctx)
 
 

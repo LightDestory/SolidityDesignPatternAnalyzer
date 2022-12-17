@@ -89,8 +89,8 @@ class SolidityScanner:
         :param call_node: The call node to analyze
         :return: A stringed function call
         """
-        expression_node: dict = call_node['expression']
-        function_name: str = expression_node['name'] if "name" in expression_node else self._build_node_string(expression_node["expression"])
+        function_name: str = call_node['name'] if "name" in call_node else self._build_node_string(
+            call_node["expression"])
         function_call: str = f"{function_name}("
         arguments: list[dict] = call_node['arguments']
         for index, argument in enumerate(arguments):
@@ -117,7 +117,7 @@ class SolidityScanner:
         variables: list[dict] = declaration_node["variables"]
         declaration_text: str = "(" if len(variables) > 1 else ""
         for index, variable in enumerate(variables):
-            declaration_text += f"{variable['name']}"
+            declaration_text += f"{self._build_node_string(variable['typeName'])} {variable['name']}"
             if index < len(variables) - 1:
                 declaration_text += ", "
         declaration_text += ")" if len(variables) > 1 else ""
@@ -131,8 +131,18 @@ class SolidityScanner:
         """
         condition_text: str = self._build_node_string(if_statement_node["condition"])
         true_body: str = self._build_node_string(if_statement_node["TrueBody"])
-        false_body: str = self._build_node_string(if_statement_node["FalseBody"])
-        return f"if {condition_text} {{{true_body}}}"
+        false_body: str = ""
+        if if_statement_node["FalseBody"]:
+            false_body: str = f"else {{{self._build_node_string(if_statement_node['FalseBody'])}}}"
+        return f"if {condition_text} {{{true_body}}}{false_body}"
+
+    def _build_index_access_string(self, index_access_node: dict) -> str:
+        """
+        This function recursively inspects an index access statement to string it
+        :param index_access_node: The index access statement node to analyze
+        :return: A stringed index access statement
+        """
+        return f"{self._build_node_string(index_access_node['base'])}[{self._build_node_string(index_access_node['index'])}]"
 
     def _build_node_string(self, node: dict) -> str:
         """
@@ -152,12 +162,14 @@ class SolidityScanner:
                 return self._build_function_call_string(node)
             case "BinaryOperation":
                 return self._build_binary_operation_string(node)
-            case "MemberAccess" | "NumberLiteral" | "stringLiteral" | "Identifier":
-                return self._get_binary_operation_operand(node)
+            case "MemberAccess" | "NumberLiteral" | "stringLiteral" | "Identifier" | "ElementaryTypeName":
+                return self._get_statement_operand(node)
             case "VariableDeclarationStatement":
                 return self._build_variable_declaration_statement_string(node)
             case "IfStatement":
                 return self._build_if_statement_string(node)
+            case "IndexAccess":
+                return self._build_index_access_string(node)
             case _:
                 logging.error(colored("Unable to decode the statement!", "red"))
                 return ""
@@ -257,7 +269,8 @@ class SolidityScanner:
                     return self._find_node_by_type(node["arguments"], type_filter)
                 case "IfStatement":
                     return (self._find_node_by_type(node["condition"], type_filter) +
-                            self._find_node_by_type(node["TrueBody"], type_filter))
+                            self._find_node_by_type(node["TrueBody"], type_filter) +
+                            self._find_node_by_type(node["FalseBody"], type_filter))
                 case _:
                     return []
 
@@ -278,7 +291,8 @@ class SolidityScanner:
         for statement in statements:
             print(colored("Found statement:", "red"))
             pprint.pprint(statement)
-            print("{} {}".format(colored("Rebuilt string:", "green"), colored(self._build_node_string(statement), "yellow")))
+            print("{} {}".format(colored("Rebuilt string:", "green"),
+                                 colored(self._build_node_string(statement), "yellow")))
         if not type_filter:
             return statements
         else:
@@ -287,10 +301,9 @@ class SolidityScanner:
             for statement in statements:
                 filtered: [dict] = self._find_node_by_type(statement, type_filter)
                 if filtered:
-                    filtered_statements+=filtered
+                    filtered_statements += filtered
                     pprint.pprint(filtered)
             return filtered_statements
-
 
     def _get_data_type_size(self, data_type_name: str) -> int:
         """
@@ -312,7 +325,7 @@ class SolidityScanner:
             case _:  # bool
                 return 1
 
-    def _get_binary_operation_operand(self, wrapped_operand: dict) -> str:
+    def _get_statement_operand(self, wrapped_operand: dict) -> str:
         """
         This function unwraps a condition operand and returns the string literal
         :param wrapped_operand: The operand object of a condition
@@ -321,15 +334,16 @@ class SolidityScanner:
         operand_type: str = wrapped_operand["type"] if wrapped_operand["type"] else "Identifier"
         match operand_type:
             case "MemberAccess":
-                name: str = f"{wrapped_operand['expression']['name']}." if "name" in wrapped_operand['expression'] \
-                    else ""
-                return f"{name}{wrapped_operand['memberName']}"
+                return f"{self._build_node_string(wrapped_operand['expression'])}.{wrapped_operand['memberName']}"
             case "FunctionCall":
                 return self._build_function_call_string(wrapped_operand)
-            case "Identifier":
+            case "Identifier" | "ElementaryTypeName":
                 return wrapped_operand["name"]
             case "NumberLiteral":
-                return str(wrapped_operand["number"])
+                value: str = str(wrapped_operand["number"])
+                if wrapped_operand["subdenomination"]:
+                    value += f" {wrapped_operand['subdenomination']}"
+                return value
             case "stringLiteral":
                 return wrapped_operand["value"]
             case _:
@@ -370,8 +384,8 @@ class SolidityScanner:
         smart_contract_operation_operands: list[tuple] = list()
         for operation in binary_operation_node:
             smart_contract_operation_operands.append((
-                self._get_binary_operation_operand(operation["right"]).lower(),
-                self._get_binary_operation_operand(operation["left"]).lower()))
+                self._get_statement_operand(operation["right"]).lower(),
+                self._get_statement_operand(operation["left"]).lower()))
         if not smart_contract_operation_operands:
             return False
         for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_operation_operands:

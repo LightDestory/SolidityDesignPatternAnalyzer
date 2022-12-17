@@ -1,4 +1,4 @@
-# Generated from solidity-antlr4/Solidity.g4 by ANTLR 4.9.3
+# Generated from solidity-antlr4/Solidity.g4 by ANTLR 4.11.1
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .SolidityParser import SolidityParser
@@ -167,6 +167,15 @@ class SolidityListener(ParseTreeListener):
 
     # Exit a parse tree produced by SolidityParser#usingForDeclaration.
     def exitUsingForDeclaration(self, ctx:SolidityParser.UsingForDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by SolidityParser#usingForObject.
+    def enterUsingForObject(self, ctx:SolidityParser.UsingForObjectContext):
+        pass
+
+    # Exit a parse tree produced by SolidityParser#usingForObject.
+    def exitUsingForObject(self, ctx:SolidityParser.UsingForObjectContext):
         pass
 
 
@@ -482,6 +491,15 @@ class SolidityListener(ParseTreeListener):
 
     # Exit a parse tree produced by SolidityParser#inlineAssemblyStatement.
     def exitInlineAssemblyStatement(self, ctx:SolidityParser.InlineAssemblyStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by SolidityParser#inlineAssemblyStatementFlag.
+    def enterInlineAssemblyStatementFlag(self, ctx:SolidityParser.InlineAssemblyStatementFlagContext):
+        pass
+
+    # Exit a parse tree produced by SolidityParser#inlineAssemblyStatementFlag.
+    def exitInlineAssemblyStatementFlag(self, ctx:SolidityParser.InlineAssemblyStatementFlagContext):
         pass
 
 
@@ -824,15 +842,6 @@ class SolidityListener(ParseTreeListener):
 
     # Exit a parse tree produced by SolidityParser#tupleExpression.
     def exitTupleExpression(self, ctx:SolidityParser.TupleExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by SolidityParser#typeNameExpression.
-    def enterTypeNameExpression(self, ctx:SolidityParser.TypeNameExpressionContext):
-        pass
-
-    # Exit a parse tree produced by SolidityParser#typeNameExpression.
-    def exitTypeNameExpression(self, ctx:SolidityParser.TypeNameExpressionContext):
         pass
 
 
