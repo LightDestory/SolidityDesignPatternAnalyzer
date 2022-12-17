@@ -114,6 +114,29 @@
             "required": [
               "check_type"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "usage_of_fn"
+              },
+              "callable_function": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "check_type",
+              "callable_function"
+            ]
           }
         ]
       },

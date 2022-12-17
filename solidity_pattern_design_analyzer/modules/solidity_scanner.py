@@ -59,30 +59,6 @@ class SolidityScanner:
             return user_confirm
         return True
 
-    def _build_return_statement_string(self, statement_node: dict) -> str:
-        """
-        This function recursively inspects a return statement to string it
-        :param statement_node: The statement node to analyze
-        :return: A stringed return statement
-        """
-        return f"return {self._build_node_string(statement_node['expression'])}"
-
-    def _build_emit_statement_string(self, statement_node: dict) -> str:
-        """
-        This function recursively inspects an emit statement to string it
-        :param statement_node: The statement node to analyze
-        :return: A stringed emit statement
-        """
-        return f"emit {self._build_node_string(statement_node['eventCall'])}"
-
-    def _build_expression_statement_string(self, statement_node: dict) -> str:
-        """
-        This function recursively inspects an expression statement to string it
-        :param statement_node: The statement node to analyze
-        :return: A stringed expression statement
-        """
-        return self._build_node_string(statement_node['expression'])
-
     def _build_function_call_string(self, call_node: dict) -> str:
         """
         This function recursively inspects a function call to string it
@@ -99,14 +75,6 @@ class SolidityScanner:
                 function_call += ", "
         function_call += ")"
         return function_call
-
-    def _build_binary_operation_string(self, operation_node: dict) -> str:
-        """
-        This function recursively inspects a binary operation to string it
-        :param operation_node: The binary operation node to analyze
-        :return: A stringed binary operation
-        """
-        return f"{self._build_node_string(operation_node['left'])} {operation_node['operator']} {self._build_node_string(operation_node['right'])}"
 
     def _build_variable_declaration_statement_string(self, declaration_node: dict) -> str:
         """
@@ -136,13 +104,19 @@ class SolidityScanner:
             false_body: str = f"else {{{self._build_node_string(if_statement_node['FalseBody'])}}}"
         return f"if {condition_text} {{{true_body}}}{false_body}"
 
-    def _build_index_access_string(self, index_access_node: dict) -> str:
+    def _build_while_loop_string(self, while_node: dict) -> str:
         """
-        This function recursively inspects an index access statement to string it
-        :param index_access_node: The index access statement node to analyze
-        :return: A stringed index access statement
+        This function recursively inspects a while/do while loop to string it
+        :param while_node: The while/do while loop node to analyze
+        :return: A stringed while/do while loop
         """
-        return f"{self._build_node_string(index_access_node['base'])}[{self._build_node_string(index_access_node['index'])}]"
+        loop_type: str = while_node["type"]
+        condition_text: str = self._build_node_string(while_node["condition"])
+        loop_body: str = self._build_node_string(while_node["body"])
+        if loop_type == "WhileStatement":
+            return f"while ({condition_text}) {{{loop_body}}}"
+        else:
+            return f"do {{{loop_body}}} while({condition_text})"
 
     def _build_node_string(self, node: dict) -> str:
         """
@@ -153,15 +127,15 @@ class SolidityScanner:
         node_type: str = node["type"] if "type" in node else ""
         match node_type:
             case "ReturnStatement":
-                return self._build_return_statement_string(node)
+                return f"return {self._build_node_string(node['expression'])}"
             case "EmitStatement":
-                return self._build_emit_statement_string(node)
+                return f"emit {self._build_node_string(node['eventCall'])}"
             case "ExpressionStatement":
-                return self._build_expression_statement_string(node)
+                return self._build_node_string(node['expression'])
             case "FunctionCall":
                 return self._build_function_call_string(node)
             case "BinaryOperation":
-                return self._build_binary_operation_string(node)
+                return f"{self._build_node_string(node['left'])} {node['operator']} {self._build_node_string(node['right'])}"
             case "MemberAccess" | "NumberLiteral" | "stringLiteral" | "Identifier" | "ElementaryTypeName":
                 return self._get_statement_operand(node)
             case "VariableDeclarationStatement":
@@ -169,7 +143,11 @@ class SolidityScanner:
             case "IfStatement":
                 return self._build_if_statement_string(node)
             case "IndexAccess":
-                return self._build_index_access_string(node)
+                return f"{self._build_node_string(node['base'])}[{self._build_node_string(node['index'])}]"
+            case "WhileStatement" | "DoWhileStatement":
+                return self._build_while_loop_string(node)
+            case "Block":
+                return f"{{{self._build_node_string(node['statements'])}}}"
             case _:
                 logging.error(colored("Unable to decode the statement!", "red"))
                 return ""
@@ -198,29 +176,6 @@ class SolidityScanner:
                     colored(item, "cyan"),
                     colored(", checking if it is used", "magenta")))
             if item in search_in:
-                return True
-        return False
-
-    def _find_usage_of(self, function_name: str, function_args: list[str], statements: list[dict]) -> bool:
-        """
-        This function look for a function call of the provided function
-        :param function_name:
-        :param function_args:
-        :param statements:
-        :return:
-        """
-        function_expression: str = f"{function_name}("
-        for index, argument in enumerate(function_args):
-            function_expression += f"{argument}"
-            if index != 0 and index < len(function_args) - 1:
-                function_expression += ", "
-        function_expression += ")"
-        for statement in statements:
-            statement_expression: str = self._build_node_string(statement)
-            if "*" not in function_args:
-                if function_expression in statement_expression:
-                    return True
-            elif f"{function_name}(" in statement_expression:
                 return True
         return False
 
@@ -437,8 +392,8 @@ class SolidityScanner:
         if len(smart_contract_functions) == 1 \
                 and smart_contract_functions[0] == "fallback" \
                 and smart_contract_node.functions["fallback"].isFallback:
-            return self._find_usage_of(function_name="revert", function_args=["*"],
-                                       statements=smart_contract_node.functions["fallback"]._node.body.statements)
+            return self._test_usage_of_fn_check(smart_contract_name=smart_contract_name,
+                                                function_calls=["revert(*any*)"])
         return False
 
     def _test_tight_variable_packing_check(self, smart_contract_name) -> bool:
@@ -478,6 +433,26 @@ class SolidityScanner:
                 # pprint.pprint(return_statements)
         return False
 
+    def _test_usage_of_fn_check(self, smart_contract_name: str, function_calls: list[str]) -> bool:
+        """
+        This function executes the usage_of_fn check: it looks for specific functions call
+        :param smart_contract_name: The name of the smart contract to analyze
+        :param function_calls: A list of function calls
+        :return: True if the usage_of_fn check is valid, False otherwise
+        """
+        smart_contract_function_calls: list[str] = [self._build_node_string(fn).lower() for fn in
+                                                    self._get_statements(smart_contract_name=smart_contract_name,
+                                                                         type_filter="FunctionCall")]
+        pprint.pprint(smart_contract_function_calls)
+        for provided_fn in function_calls:
+            provided_fn = provided_fn.lower()
+            if "*any*" in provided_fn:
+                provided_fn = provided_fn.split("(")[0]
+            for smart_contract_function_call in smart_contract_function_calls:
+                if provided_fn in smart_contract_function_call:
+                    return True
+        return False
+
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
         This function tests all the selected descriptor's checks
@@ -513,6 +488,9 @@ class SolidityScanner:
                     check_result = self._test_tight_variable_packing_check(smart_contract_name=smart_contract_name)
                 case "memory_array_building":
                     check_result = self._test_memory_array_building_check(smart_contract_name=smart_contract_name)
+                case "usage_of_fn":
+                    check_result = self._test_usage_of_fn_check(smart_contract_name=smart_contract_name,
+                                                                function_calls=check["callable_function"])
                 case _:
                     logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
             if settings.verbose:
