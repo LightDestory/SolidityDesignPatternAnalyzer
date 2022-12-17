@@ -55,7 +55,7 @@ class Plotter:
         plt.title("Analyzer Results")
         plt.legend(stats_per_descriptor.keys())
         try:
-            logging.info(colored("Displaying barplot...", "green"))
+            logging.info(colored("Displaying barplot...", "yellow"))
             plt.show()
         except KeyboardInterrupt:
             print("\n")  # Fixes no new line after input's prompts

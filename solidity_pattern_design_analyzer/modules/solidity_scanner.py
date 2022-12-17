@@ -130,8 +130,9 @@ class SolidityScanner:
         :return: A stringed if statement
         """
         condition_text: str = self._build_node_string(if_statement_node["condition"])
-        statement_body: str = self._build_node_string(if_statement_node["TrueBody"])
-        return f"if {condition_text} {{{statement_body}}}"
+        true_body: str = self._build_node_string(if_statement_node["TrueBody"])
+        false_body: str = self._build_node_string(if_statement_node["FalseBody"])
+        return f"if {condition_text} {{{true_body}}}"
 
     def _build_node_string(self, node: dict) -> str:
         """
@@ -235,7 +236,7 @@ class SolidityScanner:
                 smart_contract_modifiers.append(modifier.name)
         return smart_contract_modifiers
 
-    def _find_node_by_type(self, node: dict, type_filter: str) -> dict | None:
+    def _find_node_by_type(self, node: dict, type_filter: str) -> [dict]:
         """
         This function recursively inspects a node to find a specific sub-node
         :param node: The node to analyze
@@ -243,7 +244,7 @@ class SolidityScanner:
         """
         node_type: str = node["type"] if "type" in node else ""
         if node_type == type_filter:
-            return node
+            return [node]
         else:
             match node_type:
                 case "ReturnStatement":
@@ -255,9 +256,10 @@ class SolidityScanner:
                 case "FunctionCall":
                     return self._find_node_by_type(node["arguments"], type_filter)
                 case "IfStatement":
-                    return self._find_node_by_type(node["condition"], type_filter)
+                    return (self._find_node_by_type(node["condition"], type_filter) +
+                            self._find_node_by_type(node["TrueBody"], type_filter))
                 case _:
-                    return None
+                    return []
 
     def _get_statements(self, smart_contract_name: str, type_filter: str = "") -> list[dict]:
         """
@@ -283,9 +285,9 @@ class SolidityScanner:
             filtered_statements: list[dict] = list()
             print(f"Looking for {type_filter}")
             for statement in statements:
-                filtered: dict | None = self._find_node_by_type(statement, type_filter)
+                filtered: [dict] = self._find_node_by_type(statement, type_filter)
                 if filtered:
-                    filtered_statements.append(filtered)
+                    filtered_statements+=filtered
                     pprint.pprint(filtered)
             return filtered_statements
 
@@ -460,9 +462,6 @@ class SolidityScanner:
             if function_node["stateMutability"] == "view":
                 return_statements: dict = {}
                 # pprint.pprint(return_statements)
-                for statement in function_node["body"]["statements"]:
-                    print("\n")
-                    pprint.pprint(statement)
         return False
 
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:

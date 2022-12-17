@@ -42,6 +42,7 @@ def main() -> None:
     save_results(inputs["target"], analysis_results)
     if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
         Plotter(analysis_results).plot_results()
+    logging.info(colored("Job done!", "yellow"))
 
 
 if __name__ == '__main__':
