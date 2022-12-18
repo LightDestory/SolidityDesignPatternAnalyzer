@@ -1,0 +1,11 @@
+{
+    "name": "Guard Check",
+    "checks": [
+        {
+            "check_type": "usage_of_fn",
+            "callable_function": [
+                "require(*any*)", "assert(*any*),", "revert(*any*)"
+            ]
+        }
+    ]
+}

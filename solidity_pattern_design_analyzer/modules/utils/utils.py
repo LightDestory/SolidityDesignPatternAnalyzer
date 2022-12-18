@@ -100,7 +100,7 @@ def ask_confirm(question_text: str) -> bool:
             return False
 
 
-def save_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) -> None:
+def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) -> None:
     """
     This function saves to the disk the computation's results
     :param target: The solidity source code path
@@ -116,7 +116,7 @@ def save_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) ->
         logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
 
 
-def format_results(results: dict[str, dict[str, dict[str, bool]]]) -> str:
+def format_analysis_results(results: dict[str, dict[str, dict[str, bool]]]) -> str:
     """
     Formats the results on the terminal
     :param results: A dictionary containing the results of the static analysis

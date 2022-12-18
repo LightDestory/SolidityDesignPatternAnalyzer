@@ -8,7 +8,7 @@ from modules.config import settings
 from modules.descriptor_validator import DescriptorValidator
 from modules.plotter import Plotter
 from modules.solidity_scanner import SolidityScanner
-from modules.utils.utils import bootstrap, format_results, save_results, ask_confirm
+from modules.utils.utils import bootstrap, format_analysis_results, save_analysis_results, ask_confirm
 
 logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
 logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
@@ -39,8 +39,8 @@ def main() -> None:
         if not analysis_results:
             logging.error(colored("No smart-contract found!, aborting...", "red"))
             exit(-1)
-        logging.info(format_results(analysis_results))
-        save_results(inputs["target"], analysis_results)
+        logging.info(format_analysis_results(analysis_results))
+        save_analysis_results(inputs["target"], analysis_results)
         if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
             Plotter(analysis_results).plot_results()
     logging.info(colored("Job done!", "yellow"))

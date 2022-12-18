@@ -183,6 +183,29 @@
               "check_type",
               "event_names"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "enum_definition"
+              },
+              "enum_names": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "check_type",
+              "enum_names"
+            ]
           }
         ]
       },

@@ -11,6 +11,10 @@ from modules.utils.utils import ask_confirm
 class SolidityScanner:
     _visitor = None  # ObjectifySourceUnitVisitor
     _descriptors: list[dict]
+    _statement_operand_types: list[str] = [
+        "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier","ElementaryTypeName", "ArrayTypeName",
+        "BooleanLiteral", "UserDefinedTypeName"
+    ]
 
     def __init__(self, descriptors: list[dict]):
         self._descriptors = descriptors
@@ -84,13 +88,16 @@ class SolidityScanner:
         """
         variables: list[dict] = declaration_node["variables"]
         declaration_text: str = "(" if len(variables) > 1 else ""
+        initialization_text: str = ""
         for index, variable in enumerate(variables):
             storage_location: str = f" {variable['storageLocation']} " if variable["storageLocation"] else " "
             declaration_text += f"{self._build_node_string(variable['typeName'])}{storage_location}{variable['name']}"
             if index < len(variables) - 1:
                 declaration_text += ", "
         declaration_text += ")" if len(variables) > 1 else ""
-        return f"{declaration_text} = {self._build_node_string(declaration_node['initialValue'])}"
+        if declaration_node['initialValue']:
+            initialization_text = f" = {self._build_node_string(declaration_node['initialValue'])}"
+        return f"{declaration_text}{initialization_text}"
 
     def _build_if_statement_string(self, if_statement_node: dict) -> str:
         """
@@ -142,6 +149,21 @@ class SolidityScanner:
             statements_text += f"{self._build_node_string(statement)}; "
         return statements_text
 
+    def _build_tuple_string(self, tuple_node: dict) -> str:
+        """
+        This function recursively inspects a tuple expression to string it
+        :param tuple_node: The tuple node to analyze
+        :return: A stringed tuple
+        """
+        components: list[dict] = tuple_node["components"]
+        declaration_text: str = "("
+        for index, component in enumerate(components):
+            declaration_text += f"{self._build_node_string(component)}"
+            if index < len(components) - 1:
+                declaration_text += ", "
+        declaration_text += ")"
+        return declaration_text
+
     def _build_node_string(self, node: dict) -> str:
         """
         This function recursively inspects a node to string it
@@ -164,8 +186,7 @@ class SolidityScanner:
                 return f"{self._build_node_string(node['subExpression'])}{node['operator']}"
             case "BinaryOperation":
                 return f"{self._build_node_string(node['left'])} {node['operator']} {self._build_node_string(node['right'])}"
-            case "MemberAccess" | "NumberLiteral" | "stringLiteral" | "Identifier" \
-                 | "ElementaryTypeName" | "ArrayTypeName" | "BooleanLiteral":
+            case node_type if node_type in self._statement_operand_types:
                 return self._get_statement_operand(node)
             case "VariableDeclarationStatement":
                 return self._build_variable_declaration_statement_string(node)
@@ -181,6 +202,10 @@ class SolidityScanner:
                 return f"new {self._build_node_string(node['typeName'])}"
             case "Block":
                 return f"{{{self._build_block_string(node)}}}"
+            case "Conditional":
+                return f"{self._build_node_string(node['condition'])} ? {self._build_node_string(node['TrueExpression'])} : {self._build_node_string(node['FalseExpression'])}"
+            case "TupleExpression":
+                return self._build_tuple_string(node)
             case _:
                 logging.error(colored(f"Unable to decode the statement: {node_type}", "red"))
                 return "UDST"
@@ -216,22 +241,22 @@ class SolidityScanner:
                 return True
         return False
 
-    def _get_base_contracts_name(self, smart_contract_name: str) -> list[str]:
+    def _get_base_contract_names(self, smart_contract_name: str) -> list[str]:
         """
-        This function returns the first-level parent (inheritance) of a specified smart-contract
+        This function returns the first-level parent names (inheritance) of a specified smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
-        :return: A list of smart-contracts name
+        :return: A list of smart-contract names
         """
         parents: list[str] = list()
         for smart_contract_parent in self._visitor.contracts[smart_contract_name]._node.baseContracts:
             parents.append(smart_contract_parent.baseName.namePath)
         return parents
 
-    def _get_modifiers_name(self, smart_contract_name: str) -> list[str]:
+    def _get_modifier_names(self, smart_contract_name: str) -> list[str]:
         """
-        This function returns the modifiers name defined or used in the specified smart-contract
+        This function returns the modifier names defined or used in the specified smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
-        :return: A list of modifiers name
+        :return: A list of modifier names
         """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         smart_contract_modifiers: list[str] = list(smart_contract_node.modifiers.keys())
@@ -240,21 +265,21 @@ class SolidityScanner:
                 smart_contract_modifiers.append(modifier.name)
         return smart_contract_modifiers
 
-    def _get_fns_name(self, smart_contract_name: str) -> list[str]:
+    def _get_fn_names(self, smart_contract_name: str) -> list[str]:
         """
-        This function returns the functions name defined in the specified smart-contract
+        This function returns the function names defined in the specified smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
-        :return: A list of functions name
+        :return: A list of function names
         """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         return list(map(lambda d: smart_contract_node.functions[d]._node["name"],
                         smart_contract_node.functions))
 
-    def _get_events_name(self, smart_contract_name: str) -> list[str]:
+    def _get_event_names(self, smart_contract_name: str) -> list[str]:
         """
-        This function returns the events name defined in the specified smart-contract
+        This function returns the event names defined in the specified smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
-        :return: A list of events name
+        :return: A list of event names
         """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         return list(map(lambda d: smart_contract_node.functions[d]._node["name"],
@@ -370,6 +395,8 @@ class SolidityScanner:
             case "ArrayTypeName":
                 length: str = str(wrapped_operand["length"]) if wrapped_operand["length"] else ""
                 return f"{self._build_node_string(wrapped_operand['baseTypeName'])}[{length}]"
+            case "UserDefinedTypeName":
+                return wrapped_operand["namePath"]
             case _:
                 return ""
 
@@ -428,15 +455,15 @@ class SolidityScanner:
 
     def _test_inheritance_check(self, smart_contract_name: str, parent_names: list[str]) -> bool:
         """
-        This function executes the inheritance check: it looks for parents' name
+        This function executes the inheritance check: it looks for parent names
         :param smart_contract_name: The name of the smart contract to analyze
-        :param parent_names: A list of parents' name to look for
+        :param parent_names: A list of parent names to look for
         :return: True if the inheritance check is valid, False otherwise
         """
-        parents_names = list(map(lambda d: d.lower(), parent_names))
+        parent_names = list(map(lambda d: d.lower(), parent_names))
         smart_contract_parents: list[str] = list(
-            map(lambda d: d.lower(), self._get_base_contracts_name(smart_contract_name=smart_contract_name)))
-        return self._find_literal(search_for=parents_names, search_in=smart_contract_parents)
+            map(lambda d: d.lower(), self._get_base_contract_names(smart_contract_name=smart_contract_name)))
+        return self._find_literal(search_for=parent_names, search_in=smart_contract_parents)
 
     def _test_modifier_check(self, smart_contract_name: str, modifiers: list[str]) -> bool:
         """
@@ -447,7 +474,7 @@ class SolidityScanner:
         """
         modifiers: list[str] = list(map(lambda d: d.lower(), modifiers))
         smart_contract_modifiers: list[str] = list(
-            set(map(lambda d: d.lower(), self._get_modifiers_name(smart_contract_name=smart_contract_name))))
+            set(map(lambda d: d.lower(), self._get_modifier_names(smart_contract_name=smart_contract_name))))
         return self._find_literal(search_for=modifiers, search_in=smart_contract_modifiers)
 
     def _test_rejector_check(self, smart_contract_name) -> bool:
@@ -537,7 +564,6 @@ class SolidityScanner:
         smart_contract_function_calls: list[str] = [self._build_node_string(fn).lower() for fn in
                                                     self._get_statements(smart_contract_name=smart_contract_name,
                                                                          type_filter="FunctionCall")]
-        pprint.pprint(smart_contract_function_calls)
         function_calls = list(map(lambda d: d.lower(), function_calls))
         return self._find_literal(search_for=function_calls, search_in=smart_contract_function_calls)
 
@@ -548,7 +574,7 @@ class SolidityScanner:
         :param fn_names: A list of function names
         :return: True if the fn_definition check is valid, False otherwise
         """
-        smart_contract_fn_names: list[str] = self._get_fns_name(smart_contract_name=smart_contract_name)
+        smart_contract_fn_names: list[str] = self._get_fn_names(smart_contract_name=smart_contract_name)
         fn_names = list(map(lambda d: d.lower(), fn_names))
         smart_contract_fn_names = list(map(lambda d: d.lower(), smart_contract_fn_names))
         return self._find_literal(search_for=fn_names, search_in=smart_contract_fn_names)
@@ -564,6 +590,18 @@ class SolidityScanner:
         smart_contract_events_names: list[str] = list(map(lambda d: d.lower(), smart_contract_node.events.keys()))
         event_names = list(map(lambda d: d.lower(), event_names))
         return self._find_literal(search_for=event_names, search_in=smart_contract_events_names)
+
+    def _test_enum_definition_check(self, smart_contract_name: str, enum_names: list[str]) -> bool:
+        """
+        This function executes the enum_definition check: it looks for definition of enum with a specific name
+        :param smart_contract_name: The name of the smart contract to analyze
+        :param enum_names: A list of enum names
+        :return: True if the enum_definition check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        smart_contract_events_names: list[str] = list(map(lambda d: d.lower(), smart_contract_node.enums.keys()))
+        enum_names = list(map(lambda d: d.lower(), enum_names))
+        return self._find_literal(search_for=enum_names, search_in=smart_contract_events_names)
 
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
@@ -609,6 +647,9 @@ class SolidityScanner:
                 case "event_emit":
                     check_result = self._test_event_emit_check(smart_contract_name=smart_contract_name,
                                                                event_names=check["event_names"])
+                case "enum_definition":
+                    check_result = self._test_enum_definition_check(smart_contract_name=smart_contract_name,
+                                                               enum_names=check["enum_names"])
                 case _:
                     logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
             if settings.verbose:
