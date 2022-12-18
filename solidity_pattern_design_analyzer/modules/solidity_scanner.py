@@ -85,7 +85,8 @@ class SolidityScanner:
         variables: list[dict] = declaration_node["variables"]
         declaration_text: str = "(" if len(variables) > 1 else ""
         for index, variable in enumerate(variables):
-            declaration_text += f"{self._build_node_string(variable['typeName'])} {variable['name']}"
+            storage_location: str = f" {variable['storageLocation']} " if variable["storageLocation"] else " "
+            declaration_text += f"{self._build_node_string(variable['typeName'])}{storage_location}{variable['name']}"
             if index < len(variables) - 1:
                 declaration_text += ", "
         declaration_text += ")" if len(variables) > 1 else ""
@@ -101,8 +102,8 @@ class SolidityScanner:
         true_body: str = self._build_node_string(if_statement_node["TrueBody"])
         false_body: str = ""
         if if_statement_node["FalseBody"]:
-            false_body: str = f"else {{{self._build_node_string(if_statement_node['FalseBody'])}}}"
-        return f"if {condition_text} {{{true_body}}}{false_body}"
+            false_body: str = f"else {self._build_node_string(if_statement_node['FalseBody'])}"
+        return f"if {condition_text} {true_body} {false_body}"
 
     def _build_while_loop_string(self, while_node: dict) -> str:
         """
@@ -114,9 +115,32 @@ class SolidityScanner:
         condition_text: str = self._build_node_string(while_node["condition"])
         loop_body: str = self._build_node_string(while_node["body"])
         if loop_type == "WhileStatement":
-            return f"while ({condition_text}) {{{loop_body}}}"
+            return f"while ({condition_text}) {loop_body}"
         else:
-            return f"do {{{loop_body}}} while({condition_text})"
+            return f"do {loop_body} while({condition_text})"
+
+    def _build_for_loop_string(self, for_node: dict) -> str:
+        """
+        This function recursively inspects a for loop to string it
+        :param for_node: The for node to analyze
+        :return: A stringed for loop
+        """
+        init_condition: str = self._build_node_string(for_node["initExpression"])
+        condition_expression: str = self._build_node_string(for_node["conditionExpression"])
+        loop_expression: str = self._build_node_string(for_node["loopExpression"])
+        return f"for({init_condition}; {condition_expression}; {loop_expression}) {self._build_node_string(for_node['body'])}"
+
+    def _build_block_string(self, block_node: dict) -> str:
+        """
+        This function recursively inspects a block of statements to string it
+        :param block_node: The block of statements to analyze
+        :return: A stringed block of statements
+        """
+        statements: list[dict] = block_node["statements"]
+        statements_text = ""
+        for statement in statements:
+            statements_text += f"{self._build_node_string(statement)}; "
+        return statements_text
 
     def _build_node_string(self, node: dict) -> str:
         """
@@ -134,9 +158,14 @@ class SolidityScanner:
                 return self._build_node_string(node['expression'])
             case "FunctionCall":
                 return self._build_function_call_string(node)
+            case "UnaryOperation":
+                if node["isPrefix"]:
+                    return f"{node['operator']}{self._build_node_string(node['subExpression'])}"
+                return f"{self._build_node_string(node['subExpression'])}{node['operator']}"
             case "BinaryOperation":
                 return f"{self._build_node_string(node['left'])} {node['operator']} {self._build_node_string(node['right'])}"
-            case "MemberAccess" | "NumberLiteral" | "stringLiteral" | "Identifier" | "ElementaryTypeName":
+            case "MemberAccess" | "NumberLiteral" | "stringLiteral" | "Identifier" \
+                 | "ElementaryTypeName" | "ArrayTypeName" | "BooleanLiteral":
                 return self._get_statement_operand(node)
             case "VariableDeclarationStatement":
                 return self._build_variable_declaration_statement_string(node)
@@ -146,11 +175,15 @@ class SolidityScanner:
                 return f"{self._build_node_string(node['base'])}[{self._build_node_string(node['index'])}]"
             case "WhileStatement" | "DoWhileStatement":
                 return self._build_while_loop_string(node)
+            case "ForStatement":
+                return self._build_for_loop_string(node)
+            case "NewExpression":
+                return f"new {self._build_node_string(node['typeName'])}"
             case "Block":
-                return f"{{{self._build_node_string(node['statements'])}}}"
+                return f"{{{self._build_block_string(node)}}}"
             case _:
-                logging.error(colored("Unable to decode the statement!", "red"))
-                return ""
+                logging.error(colored(f"Unable to decode the statement: {node_type}", "red"))
+                return "UDST"
 
     def _find_literal(self, search_for: list[str], search_in: list[str]) -> bool:
         """
@@ -159,7 +192,7 @@ class SolidityScanner:
         :param search_in: The list of items to search on
         :return: True if there is a match, False otherwise
         """
-        for pattern_str in filter(lambda d: "*" in d, search_for):
+        for pattern_str in filter(lambda d: "*" in d or "*any*" in d, search_for):
             if settings.verbose:
                 logging.debug("{} '{}'".format(colored("Found descriptor's literal pattern:", "magenta"),
                                                colored(pattern_str, "cyan")))
@@ -167,7 +200,11 @@ class SolidityScanner:
                 if settings.verbose:
                     logging.debug("\t{} '{}'".format(colored("Comparing literal pattern with", "magenta"),
                                                      colored(smart_contract_item, "cyan")))
-                if pattern_str.replace("*", "") in smart_contract_item:
+                if "*any*" in pattern_str:
+                    pattern_str = pattern_str[:pattern_str.index("*any*")]
+                else:
+                    pattern_str = pattern_str.replace("*", "")
+                if pattern_str in smart_contract_item:
                     return True
         for item in filter(lambda d: "*" not in d, search_for):
             if settings.verbose:
@@ -203,12 +240,34 @@ class SolidityScanner:
                 smart_contract_modifiers.append(modifier.name)
         return smart_contract_modifiers
 
+    def _get_fns_name(self, smart_contract_name: str) -> list[str]:
+        """
+        This function returns the functions name defined in the specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A list of functions name
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        return list(map(lambda d: smart_contract_node.functions[d]._node["name"],
+                        smart_contract_node.functions))
+
+    def _get_events_name(self, smart_contract_name: str) -> list[str]:
+        """
+        This function returns the events name defined in the specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A list of events name
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        return list(map(lambda d: smart_contract_node.functions[d]._node["name"],
+                        smart_contract_node.functions))
+
     def _find_node_by_type(self, node: dict, type_filter: str) -> [dict]:
         """
         This function recursively inspects a node to find a specific sub-node
         :param node: The node to analyze
         :return: The note itself or None
         """
+        if not node:
+            return []
         node_type: str = node["type"] if "type" in node else ""
         if node_type == type_filter:
             return [node]
@@ -223,9 +282,17 @@ class SolidityScanner:
                 case "FunctionCall":
                     return self._find_node_by_type(node["arguments"], type_filter)
                 case "IfStatement":
-                    return (self._find_node_by_type(node["condition"], type_filter) +
+                    return (
+                            self._find_node_by_type(node["condition"], type_filter) +
                             self._find_node_by_type(node["TrueBody"], type_filter) +
-                            self._find_node_by_type(node["FalseBody"], type_filter))
+                            self._find_node_by_type(node["FalseBody"], type_filter)
+                    )
+                case "Block":
+                    statements: dict = node["statements"]
+                    collector: list[dict] = list()
+                    for statement in statements:
+                        collector += self._find_node_by_type(statement, type_filter)
+                    return collector
                 case _:
                     return []
 
@@ -244,20 +311,19 @@ class SolidityScanner:
         statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
         statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
         for statement in statements:
-            print(colored("Found statement:", "red"))
-            pprint.pprint(statement)
+            result: str = self._build_node_string(statement)
+            if "UDST" in result:
+                pprint.pprint(statement)
             print("{} {}".format(colored("Rebuilt string:", "green"),
-                                 colored(self._build_node_string(statement), "yellow")))
+                                 colored(result, "yellow")))
         if not type_filter:
             return statements
         else:
             filtered_statements: list[dict] = list()
-            print(f"Looking for {type_filter}")
             for statement in statements:
                 filtered: [dict] = self._find_node_by_type(statement, type_filter)
                 if filtered:
                     filtered_statements += filtered
-                    pprint.pprint(filtered)
             return filtered_statements
 
     def _get_data_type_size(self, data_type_name: str) -> int:
@@ -299,8 +365,11 @@ class SolidityScanner:
                 if wrapped_operand["subdenomination"]:
                     value += f" {wrapped_operand['subdenomination']}"
                 return value
-            case "stringLiteral":
-                return wrapped_operand["value"]
+            case "stringLiteral" | "BooleanLiteral":
+                return f"\"{wrapped_operand['value']}\""
+            case "ArrayTypeName":
+                length: str = str(wrapped_operand["length"]) if wrapped_operand["length"] else ""
+                return f"{self._build_node_string(wrapped_operand['baseTypeName'])}[{length}]"
             case _:
                 return ""
 
@@ -419,6 +488,27 @@ class SolidityScanner:
                 return True
         return False
 
+    def _test_fn_return_parameters_check(self, fn_return_parameters: list[dict],
+                                         provided_parameters: list[dict]) -> bool:
+        """
+        This function executes the fn_return_parameters check: it looks if a function that returns specific types
+        :param fn_return_parameters: The returnParameters node of a function to analyze
+        :param provided_parameters: A set of return types
+        :return: True if the tight_variable_packing check is valid, False otherwise
+        """
+        if len(fn_return_parameters) >= len(provided_parameters):
+            provided_parameters_shadow: list[dict] = provided_parameters.copy()
+            for provided_parameter in provided_parameters:
+                for smart_contract_fn_parameter in fn_return_parameters:
+                    if smart_contract_fn_parameter["storageLocation"] == provided_parameter["storageLocation"] and \
+                            smart_contract_fn_parameter["typeName"]["type"] == provided_parameter["typeName"]:
+                        provided_parameters_shadow.remove(provided_parameter)
+                        fn_return_parameters.remove(smart_contract_fn_parameter)
+                        break
+            if len(provided_parameters_shadow) == 0:
+                return True
+        return False
+
     def _test_memory_array_building_check(self, smart_contract_name) -> bool:
         """
         This function executes the memory_array_building check: it looks a view function with returns a memory array
@@ -429,8 +519,12 @@ class SolidityScanner:
         for function in smart_contract_node.functions:
             function_node: dict = smart_contract_node.functions[function]._node
             if function_node["stateMutability"] == "view":
-                return_statements: dict = {}
-                # pprint.pprint(return_statements)
+                memory_array_parameter: dict = {
+                    "storageLocation": "memory",
+                    "typeName": "ArrayTypeName"
+                }
+                return self._test_fn_return_parameters_check(function_node["returnParameters"]["parameters"],
+                                                             [memory_array_parameter])
         return False
 
     def _test_usage_of_fn_check(self, smart_contract_name: str, function_calls: list[str]) -> bool:
@@ -444,14 +538,32 @@ class SolidityScanner:
                                                     self._get_statements(smart_contract_name=smart_contract_name,
                                                                          type_filter="FunctionCall")]
         pprint.pprint(smart_contract_function_calls)
-        for provided_fn in function_calls:
-            provided_fn = provided_fn.lower()
-            if "*any*" in provided_fn:
-                provided_fn = provided_fn.split("(")[0]
-            for smart_contract_function_call in smart_contract_function_calls:
-                if provided_fn in smart_contract_function_call:
-                    return True
-        return False
+        function_calls = list(map(lambda d: d.lower(), function_calls))
+        return self._find_literal(search_for=function_calls, search_in=smart_contract_function_calls)
+
+    def _test_fn_definition_check(self, smart_contract_name: str, fn_names: list[str]) -> bool:
+        """
+        This function executes the fn_definition check: it looks for definition of function with a specific name
+        :param smart_contract_name: The name of the smart contract to analyze
+        :param fn_names: A list of function names
+        :return: True if the fn_definition check is valid, False otherwise
+        """
+        smart_contract_fn_names: list[str] = self._get_fns_name(smart_contract_name=smart_contract_name)
+        fn_names = list(map(lambda d: d.lower(), fn_names))
+        smart_contract_fn_names = list(map(lambda d: d.lower(), smart_contract_fn_names))
+        return self._find_literal(search_for=fn_names, search_in=smart_contract_fn_names)
+
+    def _test_event_emit_check(self, smart_contract_name: str, event_names: list[str]) -> bool:
+        """
+        This function executes the event_emit check: it looks for definition of event with a specific name
+        :param smart_contract_name: The name of the smart contract to analyze
+        :param event_names: A list of event names
+        :return: True if the event_emit check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        smart_contract_events_names: list[str] = list(map(lambda d: d.lower(), smart_contract_node.events.keys()))
+        event_names = list(map(lambda d: d.lower(), event_names))
+        return self._find_literal(search_for=event_names, search_in=smart_contract_events_names)
 
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
@@ -491,6 +603,12 @@ class SolidityScanner:
                 case "usage_of_fn":
                     check_result = self._test_usage_of_fn_check(smart_contract_name=smart_contract_name,
                                                                 function_calls=check["callable_function"])
+                case "fn_definition":
+                    check_result = self._test_fn_definition_check(smart_contract_name=smart_contract_name,
+                                                                  fn_names=check["fn_names"])
+                case "event_emit":
+                    check_result = self._test_event_emit_check(smart_contract_name=smart_contract_name,
+                                                               event_names=check["event_names"])
                 case _:
                     logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
             if settings.verbose:

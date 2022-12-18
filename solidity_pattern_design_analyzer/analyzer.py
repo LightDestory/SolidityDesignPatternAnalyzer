@@ -33,15 +33,16 @@ def main() -> None:
     logging.info(colored("Checking solidity version...", "yellow"))
     if not scanner.is_version_compatible():
         exit(-1)
-    logging.info(colored("Searching for design patterns...", "yellow"))
-    analysis_results: dict[str, dict[str, dict[str, bool]]] = scanner.get_design_pattern_statistics()
-    if not analysis_results:
-        logging.error(colored("No smart-contract found!, aborting...", "red"))
-        exit(-1)
-    logging.info(format_results(analysis_results))
-    save_results(inputs["target"], analysis_results)
-    if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
-        Plotter(analysis_results).plot_results()
+    if inputs["action"] == "analyze":
+        logging.info(colored("Searching for design patterns...", "yellow"))
+        analysis_results: dict[str, dict[str, dict[str, bool]]] = scanner.get_design_pattern_statistics()
+        if not analysis_results:
+            logging.error(colored("No smart-contract found!, aborting...", "red"))
+            exit(-1)
+        logging.info(format_results(analysis_results))
+        save_results(inputs["target"], analysis_results)
+        if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
+            Plotter(analysis_results).plot_results()
     logging.info(colored("Job done!", "yellow"))
 
 

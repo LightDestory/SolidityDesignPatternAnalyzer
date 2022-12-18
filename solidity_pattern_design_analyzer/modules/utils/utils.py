@@ -2,7 +2,6 @@ import argparse
 import json
 import logging
 import operator
-import pprint
 from functools import reduce
 
 from pathlib import Path
@@ -20,8 +19,11 @@ def bootstrap(default_schema: Path, default_descriptor: Path) -> dict[str, str]:
     """
     parser = argparse.ArgumentParser(
         description='A cli utility that performs a static analysis of solidity source code to find design patterns '
-                    'usage',
+                    'implementations',
         epilog=f"Version: {settings.version} - Developed by Alessio Tudisco for Bachelor Thesis")
+    parser.add_argument("-a", "--action", required=True, choices=["analyze", "describe"],
+                        help="A solidity source file can be analyzed to find design pattern implementations or "
+                             "described to create a generic descriptor")
     parser.add_argument('-t', "--target", required=True, help="Path of a solidity source code file")
     parser.add_argument('-s', "--schema", required=False, default=default_schema,
                         help="Path of a JSON-Schema to validate descriptors")
@@ -52,6 +54,8 @@ def is_input_valid(inputs: dict[str, str]) -> bool:
     :return: True if the inputs are valid, False otherwise
     """
     for input_type, input_value in inputs.items():
+        if input_type == "action":
+            continue
         input_path = Path(input_value)
         error: str = ""
         if settings.verbose:

@@ -137,6 +137,52 @@
               "check_type",
               "callable_function"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "fn_definition"
+              },
+              "fn_names": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "check_type",
+              "fn_names"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "event_emit"
+              },
+              "event_names": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "check_type",
+              "event_names"
+            ]
           }
         ]
       },

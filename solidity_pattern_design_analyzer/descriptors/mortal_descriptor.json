@@ -1,0 +1,9 @@
+{
+    "name": "Mortal",
+    "checks": [
+        {
+            "check_type": "usage_of_fn",
+            "callable_function": ["selfdestruct(*any*)"]
+        }
+    ]
+}

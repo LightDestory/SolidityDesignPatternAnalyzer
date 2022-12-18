@@ -1,0 +1,11 @@
+{
+    "name": "Pull Over Push",
+    "checks": [
+        {
+            "check_type": "usage_of_fn",
+            "callable_function": [
+                "payable(msg.sender).transfer(*any*);"
+            ]
+        }
+    ]
+}
