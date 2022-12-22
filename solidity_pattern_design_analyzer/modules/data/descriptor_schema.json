@@ -14,6 +14,30 @@
             "properties": {
               "check_type": {
                 "type": "string",
+                "const": "comparison"
+              },
+              "operator": {
+                "type": "string"
+              },
+              "operand_1": {
+                "type": "string"
+              },
+              "operand_2": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "check_type",
+              "operator",
+              "operand_1",
+              "operand_2"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
                 "const": "inheritance"
               },
               "parent_names": {
@@ -60,30 +84,6 @@
             "properties": {
               "check_type": {
                 "type": "string",
-                "const": "comparison"
-              },
-              "operator": {
-                "type": "string"
-              },
-              "operand_1": {
-                "type": "string"
-              },
-              "operand_2": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "check_type",
-              "operator",
-              "operand_1",
-              "operand_2"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "check_type": {
-                "type": "string",
                 "const": "rejector"
               }
             },
@@ -101,6 +101,41 @@
             },
             "required": [
               "check_type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "fn_return_parameters"
+              },
+              "parameters_list": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "storage_location": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "storage_location",
+                      "type"
+                    ]
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "check_type",
+              "parameters_list"
             ]
           },
           {
