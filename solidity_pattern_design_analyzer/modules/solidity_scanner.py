@@ -12,7 +12,7 @@ class SolidityScanner:
     _visitor = None  # ObjectifySourceUnitVisitor
     _descriptors: list[dict]
     _statements_collector: dict[str, dict[str, dict[str, list[dict]]]] = {}
-    _implemented_tests: list[str] = []
+    _implemented_tests: list[str]
     _generic_tests: list[str] = [
         "comparison", "inheritance", "modifier", "fn_return_parameters", "fn_call", "fn_definition", "event_emit",
         "enum_definition"
@@ -24,6 +24,14 @@ class SolidityScanner:
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
         "BooleanLiteral", "UserDefinedTypeName", "HexLiteral"
     ]
+    _reverse_comparison_operand_map: dict[str, str] = {
+        ">": "<",
+        "<": ">",
+        "<=": ">=",
+        ">=": "<=",
+        "==": "=="
+    }
+    _assignment_operands: list[str] = ["=", "+=", "-="]
 
     def __init__(self, descriptors: list[dict]):
         self._descriptors = descriptors
@@ -387,7 +395,7 @@ class SolidityScanner:
                         if "UDST" in result:
                             pprint.pprint(statement)
                         logging.debug("\t{} {}".format(colored("Rebuilt statement:", "magenta"),
-                                                     colored(result, "cyan")))
+                                                       colored(result, "cyan")))
 
     def _get_all_statements(self, smart_contract_name: str, type_filter: str = "") -> list[dict]:
         """
@@ -461,24 +469,6 @@ class SolidityScanner:
             case _:
                 return ""
 
-    def _get_comparison_reverse_operator(self, operator: str) -> str:
-        """
-        This function returns the logical reversed operator
-        :param operator: An operation operator
-        :return: The reserved operator
-        """
-        match operator:
-            case ">":
-                return "<"
-            case ">":
-                return ">"
-            case "<=":
-                return ">="
-            case ">=":
-                return "<="
-            case _:  # "=="
-                return "=="
-
     def _test_comparison_check(self, smart_contract_name: str, operator: str, operand_1: str, operand_2: str) -> bool:
         """
         This function executes the comparison check: it looks for comparison between the two provided
@@ -489,10 +479,10 @@ class SolidityScanner:
         :return: True if the comparison check is valid, False otherwise
         """
         binary_operation_node: list[dict] = self._get_all_statements(smart_contract_name=smart_contract_name,
-                                                                 type_filter="BinaryOperation")
+                                                                     type_filter="BinaryOperation")
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
-        operators: list[str] = [operator, self._get_comparison_reverse_operator(operator)]
+        operators: list[str] = [operator, self._reverse_comparison_operand_map[operator]]
         smart_contract_operation_operands: list[tuple] = list()
         for operation in binary_operation_node:
             smart_contract_operation_operands.append((
@@ -619,7 +609,7 @@ class SolidityScanner:
         """
         smart_contract_function_calls: list[str] = [self._build_node_string(fn).lower() for fn in
                                                     self._get_all_statements(smart_contract_name=smart_contract_name,
-                                                                         type_filter="FunctionCall")]
+                                                                             type_filter="FunctionCall")]
         function_calls = list(map(lambda d: d.lower(), function_calls))
         return self._find_literal(search_for=function_calls, search_in=smart_contract_function_calls)
 
@@ -665,10 +655,10 @@ class SolidityScanner:
         :param smart_contract_name: The name of the smart contract to analyze
         :return: True if the check_effects_interaction check is valid, False otherwise
         """
-        callable_fn: list[str] = ["send(*any*)","transfer(*any*)", "call(*any*)"]
+        callable_fn: list[str] = ["send(*any*)", "transfer(*any*)", "call(*any*)"]
         fn_data: dict[str, dict[str, list[int]]] = {}
         for fn_name, fn_statements in self._statements_collector[smart_contract_name]["functions"].items():
-            fn_data[fn_name] = { "fn_call_position": [], "assignment_position": []}
+            fn_data[fn_name] = {"fn_call_position": [], "assignment_position": []}
             for statement in fn_statements:
                 fn_calls: list[dict] = self._find_node_by_type(statement, "FunctionCall")
                 assignments: list[dict] = self._find_node_by_type(statement, "BinaryOperation")
@@ -677,9 +667,10 @@ class SolidityScanner:
                     if self._find_literal(callable_fn, [fn_call_string]):
                         fn_data[fn_name]["fn_call_position"].append(fn_call["loc"]["end"]["line"])
                 for assignment in assignments:
-                    if assignment["operator"] in ["=", "-=", "+="]:
+                    if assignment["operator"] in self._assignment_operands:
                         fn_data[fn_name]["assignment_position"].append(assignment["loc"]["end"]["line"])
-        for filtered in filter(lambda d: fn_data[d]["fn_call_position"] and fn_data[d]["assignment_position"], fn_data.keys()):
+        for filtered in filter(lambda d: fn_data[d]["fn_call_position"] and fn_data[d]["assignment_position"],
+                               fn_data.keys()):
             for assignment_position in fn_data[filtered]["assignment_position"]:
                 for fn_call_position in fn_data[filtered]["fn_call_position"]:
                     if assignment_position < fn_call_position:
