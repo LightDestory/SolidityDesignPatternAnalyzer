@@ -1,0 +1,8 @@
+{
+    "name": "Check Effects Interaction",
+    "checks": [
+        {
+            "check_type": "check_effects_interaction"
+        }
+    ]
+}

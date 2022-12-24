@@ -16,8 +16,7 @@ logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 
 
 def main() -> None:
-    inputs: dict[str, str] = bootstrap(default_schema=Path("./modules/data/descriptor_schema.json"),
-                                       default_descriptor=Path("./descriptors/"))
+    inputs: dict[str, str] = bootstrap(default_descriptor=Path("./descriptors/"))
     desc_validator = DescriptorValidator(inputs["descriptor"])
     logging.info(colored("Loading schema...", "yellow"))
     if not desc_validator.load_schema(schema_path=inputs["schema"]):
@@ -43,6 +42,8 @@ def main() -> None:
         save_analysis_results(inputs["target"], analysis_results)
         if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
             Plotter(analysis_results).plot_results()
+    else:
+        print("nothing")
     logging.info(colored("Job done!", "yellow"))
 
 

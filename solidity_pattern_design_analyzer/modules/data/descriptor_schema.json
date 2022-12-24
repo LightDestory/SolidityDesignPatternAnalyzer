@@ -155,7 +155,7 @@
             "properties": {
               "check_type": {
                 "type": "string",
-                "const": "usage_of_fn"
+                "const": "fn_call"
               },
               "callable_function": {
                 "type": "array",
@@ -240,6 +240,18 @@
             "required": [
               "check_type",
               "enum_names"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "check_effects_interaction"
+              }
+            },
+            "required": [
+              "check_type"
             ]
           }
         ]

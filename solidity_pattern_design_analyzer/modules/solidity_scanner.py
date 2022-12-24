@@ -11,10 +11,14 @@ from modules.utils.utils import ask_confirm
 class SolidityScanner:
     _visitor = None  # ObjectifySourceUnitVisitor
     _descriptors: list[dict]
-    _statements_collector: dict[str, list[dict]] = {}
-    _implemented_tests: list[str] = [
-        "comparison", "inheritance", "modifier", "rejector", "tight_variable_packing", "fn_return_parameters",
-        "memory_array_building", "usage_of_fn", "fn_definition", "event_emit", "enum_definition"
+    _statements_collector: dict[str, dict[str, dict[str, list[dict]]]] = {}
+    _implemented_tests: list[str] = []
+    _generic_tests: list[str] = [
+        "comparison", "inheritance", "modifier", "fn_return_parameters", "fn_call", "fn_definition", "event_emit",
+        "enum_definition"
+    ]
+    _specialized_tests: list[str] = [
+        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction"
     ]
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
@@ -23,6 +27,7 @@ class SolidityScanner:
 
     def __init__(self, descriptors: list[dict]):
         self._descriptors = descriptors
+        self._implemented_tests = self._generic_tests + self._specialized_tests
 
     def parse_solidity_file(self, solidity_file_path: str) -> bool:
         """
@@ -35,7 +40,7 @@ class SolidityScanner:
                 logging.debug("{} '{}'".format(colored("Parsing solidity source code file:", "blue"),
                                                colored(solidity_file_path, "cyan")))
             self._visitor = parser.objectify(
-                parser.parse_file(solidity_file_path, loc=False))  # ObjectifySourceUnitVisitor
+                parser.parse_file(solidity_file_path, loc=True))  # ObjectifySourceUnitVisitor
         except Exception as ex:
             logging.error(
                 colored(f"An unhandled error occurred while trying to parse the solidity file '{solidity_file_path}', "
@@ -355,7 +360,36 @@ class SolidityScanner:
                 return True
         return False
 
-    def _get_statements(self, smart_contract_name: str, type_filter: str = "") -> list[dict]:
+    def _collect_statements(self, smart_contract_name: str) -> None:
+        """
+        Collects the functions and modifiers of the selected contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return:
+        """
+        self._statements_collector[smart_contract_name] = {
+            "functions": {},
+            "modifiers": {}
+        }
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        for fn_name in smart_contract_node.functions:
+            self._statements_collector[smart_contract_name]["functions"][fn_name] = \
+                smart_contract_node.functions[fn_name]._node.body.statements
+        for modifier_name in smart_contract_node.modifiers:
+            self._statements_collector[smart_contract_name]["modifiers"][modifier_name] = \
+                smart_contract_node.modifiers[modifier_name]._node.body.statements
+        if settings.verbose:
+            for item_type in ["functions", "modifiers"]:
+                for name, statements in self._statements_collector[smart_contract_name][item_type].items():
+                    logging.debug("{} {}".format(colored(f"Rebuilding {item_type}:", "magenta"),
+                                                 colored(name, "cyan")))
+                    for statement in statements:
+                        result: str = self._build_node_string(statement)
+                        if "UDST" in result:
+                            pprint.pprint(statement)
+                        logging.debug("\t{} {}".format(colored("Rebuilt statement:", "magenta"),
+                                                     colored(result, "cyan")))
+
+    def _get_all_statements(self, smart_contract_name: str, type_filter: str = "") -> list[dict]:
         """
         This function retrieves all the statements of a specific smart-contract
         :param smart_contract_name: The name of the smart contract to analyze
@@ -363,26 +397,16 @@ class SolidityScanner:
         :return: A list of all the first-level statements
         """
         if smart_contract_name not in self._statements_collector.keys():
-            smart_contract_node = self._visitor.contracts[smart_contract_name]
-            functions_statements: list[list[dict]] = [fun._node.body.statements for fun in
-                                                      smart_contract_node.functions.values()]
-            modifiers_statements: list[list[dict]] = [mod._node.body.statements for mod in
-                                                      smart_contract_node.modifiers.values()]
-            statements: list[dict] = [statement for fun_stats in functions_statements for statement in fun_stats]
-            statements += [statement for mod_stats in modifiers_statements for statement in mod_stats]
-            if settings.verbose:
-                for statement in statements:
-                    result: str = self._build_node_string(statement)
-                    if "UDST" in result:
-                        pprint.pprint(statement)
-                    logging.debug("{} {}".format(colored("Rebuilt statement:", "magenta"),
-                                                 colored(result, "cyan")))
-            self._statements_collector[smart_contract_name] = statements
+            self._collect_statements(smart_contract_name=smart_contract_name)
+        statements_pool: list[dict] = []
+        for item_type in ["functions", "modifiers"]:
+            for name, statements in self._statements_collector[smart_contract_name][item_type].items():
+                statements_pool += statements
         if not type_filter:
-            return self._statements_collector[smart_contract_name]
+            return statements_pool
         else:
             filtered_statements: list[dict] = list()
-            for statement in self._statements_collector[smart_contract_name]:
+            for statement in statements_pool:
                 filtered: [dict] = self._find_node_by_type(statement, type_filter)
                 if filtered:
                     filtered_statements += filtered
@@ -464,7 +488,7 @@ class SolidityScanner:
         :param operand_2: A equality comparison operand
         :return: True if the comparison check is valid, False otherwise
         """
-        binary_operation_node: list[dict] = self._get_statements(smart_contract_name=smart_contract_name,
+        binary_operation_node: list[dict] = self._get_all_statements(smart_contract_name=smart_contract_name,
                                                                  type_filter="BinaryOperation")
         operand_1 = operand_1.lower()
         operand_2 = operand_2.lower()
@@ -525,8 +549,8 @@ class SolidityScanner:
         if len(smart_contract_functions) == 1 \
                 and smart_contract_functions[0] == "fallback" \
                 and smart_contract_node.functions["fallback"].isFallback:
-            return self._test_usage_of_fn_check(smart_contract_name=smart_contract_name,
-                                                function_calls=["revert(*any*)"])
+            return self._test_fn_call_check(smart_contract_name=smart_contract_name,
+                                            function_calls=["revert(*any*)"])
         return False
 
     def _test_tight_variable_packing_check(self, smart_contract_name: str) -> bool:
@@ -586,15 +610,15 @@ class SolidityScanner:
                                                     [memory_array_parameter])
         return False
 
-    def _test_usage_of_fn_check(self, smart_contract_name: str, function_calls: list[str]) -> bool:
+    def _test_fn_call_check(self, smart_contract_name: str, function_calls: list[str]) -> bool:
         """
-        This function executes the usage_of_fn check: it looks for specific functions call
+        This function executes the fn_call check: it looks for specific functions call
         :param smart_contract_name: The name of the smart contract to analyze
         :param function_calls: A list of function calls
-        :return: True if the usage_of_fn check is valid, False otherwise
+        :return: True if the fn_call check is valid, False otherwise
         """
         smart_contract_function_calls: list[str] = [self._build_node_string(fn).lower() for fn in
-                                                    self._get_statements(smart_contract_name=smart_contract_name,
+                                                    self._get_all_statements(smart_contract_name=smart_contract_name,
                                                                          type_filter="FunctionCall")]
         function_calls = list(map(lambda d: d.lower(), function_calls))
         return self._find_literal(search_for=function_calls, search_in=smart_contract_function_calls)
@@ -634,6 +658,33 @@ class SolidityScanner:
         smart_contract_events_names: list[str] = list(map(lambda d: d.lower(), smart_contract_node.enums.keys()))
         enum_names = list(map(lambda d: d.lower(), enum_names))
         return self._find_literal(search_for=enum_names, search_in=smart_contract_events_names)
+
+    def _test_check_effects_interaction_check(self, smart_contract_name: str) -> bool:
+        """
+        This function executes the check_effects_interaction check: it looks for an assignment before a fn_call
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the check_effects_interaction check is valid, False otherwise
+        """
+        callable_fn: list[str] = ["send(*any*)","transfer(*any*)", "call(*any*)"]
+        fn_data: dict[str, dict[str, list[int]]] = {}
+        for fn_name, fn_statements in self._statements_collector[smart_contract_name]["functions"].items():
+            fn_data[fn_name] = { "fn_call_position": [], "assignment_position": []}
+            for statement in fn_statements:
+                fn_calls: list[dict] = self._find_node_by_type(statement, "FunctionCall")
+                assignments: list[dict] = self._find_node_by_type(statement, "BinaryOperation")
+                for fn_call in fn_calls:
+                    fn_call_string: str = self._build_node_string(fn_call).lower()
+                    if self._find_literal(callable_fn, [fn_call_string]):
+                        fn_data[fn_name]["fn_call_position"].append(fn_call["loc"]["end"]["line"])
+                for assignment in assignments:
+                    if assignment["operator"] in ["=", "-=", "+="]:
+                        fn_data[fn_name]["assignment_position"].append(assignment["loc"]["end"]["line"])
+        for filtered in filter(lambda d: fn_data[d]["fn_call_position"] and fn_data[d]["assignment_position"], fn_data.keys()):
+            for assignment_position in fn_data[filtered]["assignment_position"]:
+                for fn_call_position in fn_data[filtered]["fn_call_position"]:
+                    if assignment_position < fn_call_position:
+                        return True
+        return False
 
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
@@ -676,9 +727,9 @@ class SolidityScanner:
                                                                          provided_parameters=check["parameters_list"])
                 case "memory_array_building":
                     check_result = self._test_memory_array_building_check(smart_contract_name=smart_contract_name)
-                case "usage_of_fn":
-                    check_result = self._test_usage_of_fn_check(smart_contract_name=smart_contract_name,
-                                                                function_calls=check["callable_function"])
+                case "fn_call":
+                    check_result = self._test_fn_call_check(smart_contract_name=smart_contract_name,
+                                                            function_calls=check["callable_function"])
                 case "fn_definition":
                     check_result = self._test_fn_definition_check(smart_contract_name=smart_contract_name,
                                                                   fn_names=check["fn_names"])
@@ -688,6 +739,8 @@ class SolidityScanner:
                 case "enum_definition":
                     check_result = self._test_enum_definition_check(smart_contract_name=smart_contract_name,
                                                                     enum_names=check["enum_names"])
+                case "check_effects_interaction":
+                    check_result = self._test_check_effects_interaction_check(smart_contract_name=smart_contract_name)
             if settings.verbose:
                 if check_result:
                     logging.debug(colored("Test passed!", "green"))

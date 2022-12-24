@@ -10,10 +10,9 @@ from termcolor import colored
 from modules.config import settings
 
 
-def bootstrap(default_schema: Path, default_descriptor: Path) -> dict[str, str]:
+def bootstrap(default_descriptor: Path) -> dict[str, str]:
     """
     This function parses the user's input and, if validated, return them in a dictionary
-    :param default_schema: Path to the default schema
     :param default_descriptor: Path to the default descriptor folder
     :return: A dictionary containing the validated data
     """
@@ -25,8 +24,6 @@ def bootstrap(default_schema: Path, default_descriptor: Path) -> dict[str, str]:
                         help="A solidity source file can be analyzed to find design pattern implementations or "
                              "described to create a generic descriptor")
     parser.add_argument('-t', "--target", required=True, help="Path of a solidity source code file")
-    parser.add_argument('-s', "--schema", required=False, default=default_schema,
-                        help="Path of a JSON-Schema to validate descriptors")
     parser.add_argument('-d', "--descriptor", required=False, default=default_descriptor,
                         help="Path of a Design Pattern descriptor or a folder containing them")
     parser.add_argument('-v', '--verbose', required=False, help="For debugging purpose, show all the intermediate logs",
@@ -42,6 +39,7 @@ def bootstrap(default_schema: Path, default_descriptor: Path) -> dict[str, str]:
     del inputs["verbose"]
     del inputs["allow_incompatible"]
     del inputs["auto_plot"]
+    inputs["schema"] = settings.schema_path
     if not is_input_valid(inputs):
         exit(-1)
     return inputs

@@ -2,7 +2,7 @@
     "name": "Commit & Reveal",
     "checks": [
         {
-            "check_type": "usage_of_fn",
+            "check_type": "fn_call",
             "callable_function": [
                 "commit(*any*)", "reveal(*any*)"
             ]

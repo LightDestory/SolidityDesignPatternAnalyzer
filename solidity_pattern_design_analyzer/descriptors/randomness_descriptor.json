@@ -2,7 +2,7 @@
     "name": "Randomness",
     "checks": [
         {
-            "check_type": "usage_of_fn",
+            "check_type": "fn_call",
             "callable_function": [
                 "uint(blockhash(block.number - 1))",
                 "uint(keccak256(abi.encodePacked(blockhash(block.number-1), seed)))",
