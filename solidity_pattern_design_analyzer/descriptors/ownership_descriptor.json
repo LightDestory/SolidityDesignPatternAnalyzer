@@ -11,9 +11,13 @@
         },
         {
             "check_type": "comparison",
-            "operator": "==",
-            "operand_1": "msg.sender",
-            "operand_2": "owner"
+            "binary_operations": [
+                {
+                    "operator": "==",
+                    "operand_1": "msg.sender",
+                    "operand_2": "owner"
+                }
+            ]
         }
     ]
 }

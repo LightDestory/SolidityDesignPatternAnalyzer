@@ -235,14 +235,11 @@ class SolidityScanner:
         :param search_in: The list of items to search on
         :return: True if there is a match, False otherwise
         """
-        for pattern_str in filter(lambda d: "*" in d or "*any*" in d, search_for):
+        for pattern_str in filter(lambda d: "*" in d, search_for):
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored("Found descriptor's literal pattern:", "magenta"),
+                logging.debug("{} '{}'".format(colored("Checking descriptor's literal pattern:", "magenta"),
                                                colored(pattern_str, "cyan")))
             for smart_contract_item in search_in:
-                if settings.verbose:
-                    logging.debug("\t{} '{}'".format(colored("Comparing literal pattern with", "magenta"),
-                                                     colored(smart_contract_item, "cyan")))
                 if "*any*" in pattern_str:
                     pattern_str = pattern_str[:pattern_str.index("*any*")]
                 else:
@@ -251,10 +248,9 @@ class SolidityScanner:
                     return True
         for item in filter(lambda d: "*" not in d, search_for):
             if settings.verbose:
-                logging.debug("{} '{}' {}".format(
-                    colored("Found descriptor's literal: ", "magenta"),
-                    colored(item, "cyan"),
-                    colored(", checking if it is used", "magenta")))
+                logging.debug("{} '{}'".format(
+                    colored("Checking descriptor's literal: ", "magenta"),
+                    colored(item, "cyan")))
             if item in search_in:
                 return True
         return False
@@ -302,6 +298,15 @@ class SolidityScanner:
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         return list(map(lambda d: smart_contract_node.functions[d]._node["name"],
                         smart_contract_node.functions))
+
+    def _get_enum_names(self, smart_contract_name: str) -> list[str]:
+        """
+        This function returns the enum names defined in the specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A list of enum names
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        return list(map(lambda d: d.lower(), smart_contract_node.enums.keys()))
 
     def _find_node_by_type(self, node: dict, type_filter: str) -> [dict]:
         """
@@ -469,39 +474,40 @@ class SolidityScanner:
             case _:
                 return ""
 
-    def _test_comparison_check(self, smart_contract_name: str, operator: str, operand_1: str, operand_2: str) -> bool:
+    def _test_comparison_check(self, smart_contract_name: str, binary_operations: list[dict]) -> bool:
         """
         This function executes the comparison check: it looks for comparison between the two provided
         operands
         :param smart_contract_name: The name of the smart contract to analyze
-        :param operand_1: A equality comparison operand
-        :param operand_2: A equality comparison operand
+        :param binary_operations: A list of binary operations that could be performed
         :return: True if the comparison check is valid, False otherwise
         """
-        binary_operation_node: list[dict] = self._get_all_statements(smart_contract_name=smart_contract_name,
-                                                                     type_filter="BinaryOperation")
-        operand_1 = operand_1.lower()
-        operand_2 = operand_2.lower()
-        operators: list[str] = [operator, self._reverse_comparison_operand_map[operator]]
-        smart_contract_operation_operands: list[tuple] = list()
-        for operation in binary_operation_node:
-            smart_contract_operation_operands.append((
-                self._get_statement_operand(operation["right"]).lower(),
-                self._get_statement_operand(operation["left"]).lower()))
-        if not smart_contract_operation_operands:
-            return False
-        for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_operation_operands:
-            match operator:
-                case "==":
-                    if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
-                            or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
-                        return True
-                case _:
-                    if (operator == operators[0] and (
-                            operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2)) \
-                            or (operator == operators[1] and (
-                            operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2)):
-                        return True
+        smart_contract_binary_operations: list[dict] = self._get_all_statements(smart_contract_name=smart_contract_name,
+                                                                                type_filter="BinaryOperation")
+        for provided_operation in binary_operations:
+            operand_1: str = provided_operation["operand_1"].lower()
+            operand_2: str = provided_operation["operand_2"].lower()
+            operator: str = provided_operation["operator"]
+            operators: list[str] = [operator, self._reverse_comparison_operand_map[operator]]
+            smart_contract_operation_operands: list[tuple] = list()
+            for smart_contract_operation in smart_contract_binary_operations:
+                smart_contract_operation_operands.append((
+                    self._get_statement_operand(smart_contract_operation["right"]).lower(),
+                    self._get_statement_operand(smart_contract_operation["left"]).lower()))
+            if not smart_contract_operation_operands:
+                return False
+            for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_operation_operands:
+                match operator:
+                    case "==":
+                        if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
+                                or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
+                            return True
+                    case _:
+                        if (operator == operators[0] and (
+                                operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2)) \
+                                or (operator == operators[1] and (
+                                operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2)):
+                            return True
         return False
 
     def _test_inheritance_check(self, smart_contract_name: str, parent_names: list[str]) -> bool:
@@ -644,10 +650,9 @@ class SolidityScanner:
         :param enum_names: A list of enum names
         :return: True if the enum_definition check is valid, False otherwise
         """
-        smart_contract_node = self._visitor.contracts[smart_contract_name]
-        smart_contract_events_names: list[str] = list(map(lambda d: d.lower(), smart_contract_node.enums.keys()))
+        smart_contract_enum_names: list[str] = self._get_enum_names(smart_contract_name=smart_contract_name)
         enum_names = list(map(lambda d: d.lower(), enum_names))
-        return self._find_literal(search_for=enum_names, search_in=smart_contract_events_names)
+        return self._find_literal(search_for=enum_names, search_in=smart_contract_enum_names)
 
     def _test_check_effects_interaction_check(self, smart_contract_name: str) -> bool:
         """
@@ -673,7 +678,7 @@ class SolidityScanner:
                                fn_data.keys()):
             for assignment_position in fn_data[filtered]["assignment_position"]:
                 for fn_call_position in fn_data[filtered]["fn_call_position"]:
-                    if assignment_position < fn_call_position:
+                    if (assignment_position + 2) >= fn_call_position:
                         return True
         return False
 
@@ -706,9 +711,7 @@ class SolidityScanner:
                                                              modifiers=check["modifiers"])
                 case "comparison":
                     check_result = self._test_comparison_check(smart_contract_name=smart_contract_name,
-                                                               operator=check["operator"],
-                                                               operand_1=check["operand_1"],
-                                                               operand_2=check["operand_2"])
+                                                               binary_operations=check["binary_operations"])
                 case "rejector":
                     check_result = self._test_rejector_check(smart_contract_name=smart_contract_name)
                 case "tight_variable_packing":
@@ -763,4 +766,66 @@ class SolidityScanner:
         results: dict[str, dict[str, dict[str, bool]]] = {}
         for smart_contract_name in self._visitor.contracts.keys():
             results[smart_contract_name] = self._find_design_pattern_usage(smart_contract_name=smart_contract_name)
+        return results
+
+    def _describe_smart_contract(self, smart_contract_name: str) -> list[dict]:
+        """
+        This function generate the test's parameters for each generic test
+        :param smart_contract_name: The name of the smart contract to describe
+        :return: A list of generic tests
+        """
+        results: list[dict] = []
+        if settings.verbose:
+            logging.info("{} '{}'".format(colored("Describing smart-contract: ", "yellow"),
+                                          colored(smart_contract_name, "cyan")))
+        for test_name in self._generic_tests:
+            test_keyword: str = ""
+            test_parameters: list = []
+            if settings.verbose:
+                logging.debug("{} '{}'".format(colored(f"Looking on check:", "blue"), colored(test_name, "cyan")))
+            match test_name:
+                case "inheritance":
+                    test_parameters = self._get_base_contract_names(smart_contract_name=smart_contract_name)
+                    test_keyword = "parent_names"
+                case "modifier":
+                    test_parameters = self._get_modifier_names(smart_contract_name=smart_contract_name)
+                    test_keyword = "modifiers"
+                # case "comparison":
+                #    check_result = self._test_comparison_check(smart_contract_name=smart_contract_name,
+                #                                               operator=check["operator"],
+                #                                               operand_1=check["operand_1"],
+                #                                               operand_2=check["operand_2"])
+                # case "fn_return_parameters":
+                #    check_result = self._test_fn_return_parameters_check(smart_contract_name=smart_contract_name,
+                #                                                         provided_parameters=check["parameters_list"])
+                # case "fn_call":
+                #    check_result = self._test_fn_call_check(smart_contract_name=smart_contract_name,
+                #                                            function_calls=check["callable_function"])
+                case "fn_definition":
+                    test_parameters = self._get_fn_names(smart_contract_name=smart_contract_name)
+                    test_keyword = "fn_names"
+                case "event_emit":
+                    test_parameters = self._get_event_names(smart_contract_name=smart_contract_name)
+                    test_keyword = "event_names"
+                case "enum_definition":
+                    test_parameters = self._get_enum_names(smart_contract_name=smart_contract_name)
+                    test_keyword = "enum_names"
+                case _:
+                    logging.error(f"{test_name}  not implemented")
+            if test_parameters:
+                test_result: dict = {
+                    "check_type": test_name,
+                    test_keyword: test_parameters
+                }
+                results.append(test_result)
+        return results
+
+    def generate_design_pattern_descriptors(self) -> dict[str, list[dict]]:
+        """
+        This function generates a design pattern descriptors using the generic tests
+        :return: A dictionary containing the generated descriptors for each provided smart-contract
+        """
+        results: dict[str, list[dict]] = {}
+        for smart_contract_name in self._visitor.contracts.keys():
+            results[smart_contract_name] = self._describe_smart_contract(smart_contract_name=smart_contract_name)
         return results

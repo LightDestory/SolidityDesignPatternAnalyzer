@@ -3,9 +3,13 @@
     "checks": [
         {
             "check_type": "comparison",
-            "operator": "==",
-            "operand_1": "keccak256(abi.encodePacked",
-            "operand_2": "keccak256(abi.encodePacked"
+            "binary_operations": [
+                {
+                    "operator": "==",
+                    "operand_1": "keccak256(abi.encodePacked",
+                    "operand_2": "keccak256(abi.encodePacked"
+                }
+            ]
         }
     ]
 }

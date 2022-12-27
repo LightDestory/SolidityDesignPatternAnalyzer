@@ -7,9 +7,13 @@
         },
         {
             "check_type": "comparison",
-            "operator": ">",
-            "operand_1": "timestamp",
-            "operand_2": "expire"
+            "binary_operations": [
+                {
+                    "operator": ">",
+                    "operand_1": "timestamp",
+                    "operand_2": "expire"
+                }
+            ]
         }
     ]
 }

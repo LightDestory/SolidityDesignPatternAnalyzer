@@ -16,21 +16,36 @@
                 "type": "string",
                 "const": "comparison"
               },
-              "operator": {
-                "type": "string"
-              },
-              "operand_1": {
-                "type": "string"
-              },
-              "operand_2": {
-                "type": "string"
+              "binary_operations": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "operator": {
+                        "type": "string"
+                      },
+                      "operand_1": {
+                        "type": "string"
+                      },
+                      "operand_2": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "operator",
+                      "operand_1",
+                      "operand_2"
+                    ]
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
               }
             },
             "required": [
               "check_type",
-              "operator",
-              "operand_1",
-              "operand_2"
+              "binary_operations"
             ]
           },
           {

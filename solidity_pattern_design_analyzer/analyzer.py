@@ -1,4 +1,5 @@
 import logging
+import pprint
 from pathlib import Path
 
 from colorama import init
@@ -43,7 +44,8 @@ def main() -> None:
         if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
             Plotter(analysis_results).plot_results()
     else:
-        print("nothing")
+        describe_results: dict[str, list[dict]] = scanner.generate_design_pattern_descriptors()
+        pprint.pprint(describe_results)
     logging.info(colored("Job done!", "yellow"))
 
 
