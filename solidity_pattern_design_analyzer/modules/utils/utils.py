@@ -100,7 +100,7 @@ def ask_confirm(question_text: str) -> bool:
 
 def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) -> None:
     """
-    This function saves to the disk the computation's results
+    This function saves to the disk the analysis's results
     :param target: The solidity source code path
     :param results: A dictionary containing the results of the static analysis
     """
@@ -112,6 +112,27 @@ def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, bo
             logging.info("{} '{}'".format(colored("Results saved to:", "green"), colored(str(output_path), "cyan")))
     except IOError as fp_error:
         logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
+
+
+def save_describe_results(target: str, results: dict[str, list[dict]]) -> None:
+    """
+    This function saves to the disk the smart-contract's describe results
+    :param target: The solidity source code path
+    :param results: A dictionary containing the generated descriptors
+    """
+    target_path: Path = Path(target)
+    for descriptor_name, descriptor_checks in results.items():
+        output_path: Path = Path(f"{target_path.parent}/{descriptor_name}_descriptor.json")
+        descriptor: dict = {
+            "name": descriptor_name,
+            "checks": descriptor_checks
+        }
+        try:
+            with open(output_path, "w") as output_fp:
+                output_fp.write(json.dumps(descriptor))
+                logging.info("{} '{}'".format(colored("Descriptor saved to:", "green"), colored(str(output_path), "cyan")))
+        except IOError as fp_error:
+            logging.error(colored(f"Unable to save descriptor to: '{output_path}'\n{fp_error}", "red"))
 
 
 def format_analysis_results(results: dict[str, dict[str, dict[str, bool]]]) -> str:

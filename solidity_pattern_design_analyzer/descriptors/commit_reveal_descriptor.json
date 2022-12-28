@@ -9,7 +9,7 @@
         },
         {
             "check_type": "fn_definition",
-            "fn_names": ["commit", "reveal"]
+            "fn_names": ["commit", "reveal", "tracecommit"]
         },
         {
             "check_type": "event_emit",

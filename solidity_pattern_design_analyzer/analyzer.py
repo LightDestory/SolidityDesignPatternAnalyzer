@@ -9,7 +9,8 @@ from modules.config import settings
 from modules.descriptor_validator import DescriptorValidator
 from modules.plotter import Plotter
 from modules.solidity_scanner import SolidityScanner
-from modules.utils.utils import bootstrap, format_analysis_results, save_analysis_results, ask_confirm
+from modules.utils.utils import bootstrap, format_analysis_results, save_analysis_results, ask_confirm, \
+    save_describe_results
 
 logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
 logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
@@ -35,17 +36,20 @@ def main() -> None:
         exit(-1)
     if inputs["action"] == "analyze":
         logging.info(colored("Searching for design patterns...", "yellow"))
-        analysis_results: dict[str, dict[str, dict[str, bool]]] = scanner.get_design_pattern_statistics()
-        if not analysis_results:
-            logging.error(colored("No smart-contract found!, aborting...", "red"))
-            exit(-1)
-        logging.info(format_analysis_results(analysis_results))
-        save_analysis_results(inputs["target"], analysis_results)
-        if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
-            Plotter(analysis_results).plot_results()
+        computation_results: dict[str, dict[str, dict[str, bool]]] = scanner.get_design_pattern_statistics()
     else:
-        describe_results: dict[str, list[dict]] = scanner.generate_design_pattern_descriptors()
-        pprint.pprint(describe_results)
+        logging.info(colored("Generating design pattern descriptors...", "yellow"))
+        computation_results: dict[str, list[dict]] = scanner.generate_design_pattern_descriptors()
+    if not computation_results:
+        logging.error(colored("The computation did not produce any results!, aborting...", "red"))
+        exit(-1)
+    if inputs["action"] == "analyze":
+        logging.info(format_analysis_results(computation_results))
+        save_analysis_results(inputs["target"], computation_results)
+        if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
+            Plotter(computation_results).plot_results()
+    else:
+        save_describe_results(inputs["target"], computation_results)
     logging.info(colored("Job done!", "yellow"))
 
 
