@@ -87,11 +87,10 @@ def ask_confirm(question_text: str) -> bool:
     while True:
         try:
             answer: str = input(colored(f"{question_text} [y/n]: ", "magenta")).lower()
-            if answer == "y" or answer == "n":
-                if answer == "y":
-                    return True
-                else:
-                    return False
+            if answer == "y":
+                return True
+            elif answer == "n":
+                return False
         except KeyboardInterrupt:
             print("\n")  # Fixes no new line after input's prompts
             logging.info(colored("KeyboardInterrupt intercepted, aborting...", "yellow"))
@@ -142,10 +141,10 @@ def format_analysis_results(results: dict[str, dict[str, dict[str, bool]]]) -> s
     :return: A formatted string to display results
     """
     styled_results: str = colored("\n|--- Results ---|\n\n", "green")
-    for smart_contract in results.keys():
+    for smart_contract, descriptors in results.items():
         styled_results = f"{styled_results}{colored('Smart-Contract: ', 'green')}{colored(smart_contract, 'yellow')}\n"
-        for descriptor, checks in results[smart_contract].items():
-            passed_tests: int = int(reduce(operator.add, checks.values()))
+        for descriptor, checks in descriptors.items():
+            passed_tests: int = sum(checks.values())
             styled_results = f'{styled_results}\t{colored("Descriptor: ", "green")}{colored(descriptor, "yellow")}' \
                              f'\n\t\tMay {"be" if passed_tests > 0 else "be not"} used ' \
                              f'({colored(str(passed_tests), "magenta")} checks passed)\n'

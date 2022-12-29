@@ -18,7 +18,8 @@ class Plotter:
         This function returns a list of used descriptors
         :return: A list used descriptors' name
         """
-        return list(self._packed_data[list(self._packed_data.keys())[0]].keys())
+        descriptors = list(self._packed_data.values())[0] # get the first value of the dictionary
+        return list(descriptors.keys())
 
     def _extract_stats(self) -> dict[str, list[int]]:
         """
@@ -28,8 +29,8 @@ class Plotter:
         stats: dict[str, list[int]] = {}
         for descriptor in self._get_descriptors():
             grouping: list[int] = []
-            for smart_contract in self._packed_data.keys():
-                passed_tests: int = int(reduce(operator.add, self._packed_data[smart_contract][descriptor].values()))
+            for smart_contract in self._packed_data.values():
+                passed_tests: int = sum(smart_contract[descriptor].values())
                 grouping.append(passed_tests)
             stats[descriptor] = grouping
         return stats
