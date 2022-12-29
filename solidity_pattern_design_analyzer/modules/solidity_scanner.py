@@ -411,7 +411,7 @@ class SolidityScanner:
         else:
             filtered_statements: list[dict] = list()
             for statement in statements_pool:
-                filtered: [dict] = self._find_node_by_type(statement, type_filter)
+                filtered: list[dict] = self._find_node_by_type(statement, type_filter)
                 if filtered:
                     filtered_statements += filtered
             return filtered_statements
@@ -446,10 +446,11 @@ class SolidityScanner:
             return self._fixed_data_type_byte_sizes[data_type_name]
         elif "int" in data_type_name:
             int_size: str = data_type_name.replace("u", "").replace("int", "")
-            return 32 if int_size == "" else int(int_size) / 8
+            return 32 if int_size == "" else int(int_size) // 8
         elif "byte" in data_type_name:
             byte_size: str = data_type_name.replace("s", "").replace("byte", "")
             return 1 if byte_size == "" else int(byte_size)
+        raise Exception(f"Unsupported data type: {data_type_name}")
 
     def _get_statement_operand(self, wrapped_operand: dict) -> str:
         """
@@ -479,8 +480,10 @@ class SolidityScanner:
                 return wrapped_operand["namePath"]
             case "IndexAccess":
                 return f"{self._build_node_string(wrapped_operand['base'])}[{self._build_node_string(wrapped_operand['index'])}]"
+            case _:
+                raise Exception(f"Unsupported operand type: {operand_type}")
 
-    def _find_node_by_type(self, node: dict, type_filter: str) -> [dict]:
+    def _find_node_by_type(self, node: dict, type_filter: str) -> list[dict]:
         """
         This function recursively inspects a node to find a specific sub-node
         :param node: The node to analyze
@@ -578,11 +581,11 @@ class SolidityScanner:
         :param parent_names: A list of parent names to look for
         :return: True if the inheritance check is valid, False otherwise
         """
-        parent_names = set(map(lambda d: d.lower(), parent_names))
+        unique_names = set(map(lambda d: d.lower(), parent_names))
         smart_contract_parents: set[str] = self._get_base_contract_names(smart_contract_name=smart_contract_name)
         if not smart_contract_parents:
             return False
-        return self._compare_literal(search_for=parent_names, search_in=smart_contract_parents)
+        return self._compare_literal(search_for=unique_names, search_in=smart_contract_parents)
 
     def _test_modifier_check(self, smart_contract_name: str, modifiers: list[str]) -> bool:
         """
@@ -591,11 +594,11 @@ class SolidityScanner:
         :param modifiers: A list of modifiers' name to look for
         :return: True if the modifier check is valid, False otherwise
         """
-        modifiers: set[str] = set(map(lambda d: d.lower(), modifiers))
+        unique_modifiers: set[str] = set(map(lambda d: d.lower(), modifiers))
         smart_contract_modifiers: set[str] = self._get_modifier_names(smart_contract_name=smart_contract_name)
         if not smart_contract_modifiers:
             return False
-        return self._compare_literal(search_for=modifiers, search_in=smart_contract_modifiers)
+        return self._compare_literal(search_for=unique_modifiers, search_in=smart_contract_modifiers)
 
     def _test_fn_return_parameters_check(self, smart_contract_name: str, provided_parameters: list[dict]) -> bool:
         """
@@ -622,8 +625,8 @@ class SolidityScanner:
         smart_contract_function_calls: set[str] = set([self._build_node_string(fn).lower() for fn in
                                                        self._get_all_statements(smart_contract_name=smart_contract_name,
                                                                                 type_filter="FunctionCall")])
-        function_calls: set[str] = set(map(lambda d: d.lower(), function_calls))
-        return self._compare_literal(search_for=function_calls, search_in=smart_contract_function_calls)
+        unique_function_calls: set[str] = set(map(lambda d: d.lower(), function_calls))
+        return self._compare_literal(search_for=unique_function_calls, search_in=smart_contract_function_calls)
 
     def _test_fn_definition_check(self, smart_contract_name: str, fn_names: list[str]) -> bool:
         """
@@ -632,10 +635,10 @@ class SolidityScanner:
         :param fn_names: A list of function names
         :return: True if the fn_definition check is valid, False otherwise
         """
-        fn_names: set[str] = set(map(lambda d: d.lower(), fn_names))
+        unique_fn_names: set[str] = set(map(lambda d: d.lower(), fn_names))
         smart_contract_fn_names: set[str] = set(map(lambda d: d.lower(),
                                                     self._get_fn_names(smart_contract_name=smart_contract_name)))
-        return self._compare_literal(search_for=fn_names, search_in=smart_contract_fn_names)
+        return self._compare_literal(search_for=unique_fn_names, search_in=smart_contract_fn_names)
 
     def _test_event_emit_check(self, smart_contract_name: str, event_names: list[str]) -> bool:
         """
@@ -646,8 +649,8 @@ class SolidityScanner:
         """
         smart_contract_events_names: set[str] = set(map(lambda d: d.lower(),
                                                         self._get_event_names(smart_contract_name=smart_contract_name)))
-        event_names: set[str] = set(map(lambda d: d.lower(), event_names))
-        return self._compare_literal(search_for=event_names, search_in=smart_contract_events_names)
+        unique_event_names: set[str] = set(map(lambda d: d.lower(), event_names))
+        return self._compare_literal(search_for=unique_event_names, search_in=smart_contract_events_names)
 
     def _test_enum_definition_check(self, smart_contract_name: str, enum_names: list[str]) -> bool:
         """
@@ -658,8 +661,8 @@ class SolidityScanner:
         """
         smart_contract_enum_names: set[str] = set(map(lambda d: d.lower(),
                                                       self._get_enum_names(smart_contract_name=smart_contract_name)))
-        enum_names = set(map(lambda d: d.lower(), enum_names))
-        return self._compare_literal(search_for=enum_names, search_in=smart_contract_enum_names)
+        unique_enum_names = set(map(lambda d: d.lower(), enum_names))
+        return self._compare_literal(search_for=unique_enum_names, search_in=smart_contract_enum_names)
 
     def _test_rejector_check(self, smart_contract_name: str) -> bool:
         """
@@ -828,7 +831,7 @@ class SolidityScanner:
                                           colored(smart_contract_name, "cyan"))
         for test_name in self._generic_tests:
             test_keyword: str = ""
-            test_parameters: set = set()
+            test_parameters: list[dict] | set[str] = set()
             if settings.verbose:
                 logging.debug("%s '%s'", colored(f"Looking on check:", "blue"), colored(test_name, "cyan"))
             match test_name:
@@ -839,9 +842,9 @@ class SolidityScanner:
                     test_parameters = self._get_modifier_names(smart_contract_name=smart_contract_name)
                     test_keyword = "modifiers"
                 case "comparison":
-                    smart_contract_comparisons: list[dict] = self._get_all_comparison_statements(
+                    smart_contract_comparisons= self._get_all_comparison_statements(
                         smart_contract_name=smart_contract_name)
-                    test_parameters: list[dict] = []
+                    test_parameters = []
                     for comparison in smart_contract_comparisons:
                         test_parameters.append(
                             {
@@ -854,9 +857,9 @@ class SolidityScanner:
                 case "fn_return_parameters":
                     smart_contract_fn_return_parameters: dict[str, list[dict]] = self._get_all_fn_return_parameters(
                         smart_contract_name=smart_contract_name)
-                    test_parameters: list[dict] = []
+                    test_parameters = []
                     for parameters_list in smart_contract_fn_return_parameters.values():
-                        test_parameters.append += parameters_list
+                        test_parameters += parameters_list
                     test_keyword = "parameters_list"
                 case "fn_call":
                     test_parameters = set([self._build_node_string(fn).lower() for fn in

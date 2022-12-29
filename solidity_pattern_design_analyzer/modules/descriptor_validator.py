@@ -63,7 +63,7 @@ class DescriptorValidator:
             logging.error(colored("Unable to load descriptors without a loaded descriptor schema", "red"))
             return []
         descriptors_path: list[Path] = self._get_available_descriptors()
-        descriptors: list[dict] = list()
+        descriptors: list[dict] = []
         for descriptor_path in descriptors_path:
             error: str = ""
             try:

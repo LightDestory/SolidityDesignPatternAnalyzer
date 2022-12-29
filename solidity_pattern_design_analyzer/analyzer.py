@@ -19,6 +19,7 @@ logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 def main() -> None:
     inputs: dict[str, str] = bootstrap(default_descriptor=Path("./descriptors/"))
     desc_validator = DescriptorValidator(inputs["descriptor"])
+    computation_results: dict[str, dict[str, dict[str, bool]]] | dict[str, list[dict]] = {}
     logging.info(colored("Loading schema...", "yellow"))
     if not desc_validator.load_schema(schema_path=inputs["schema"]):
         exit(-1)
@@ -35,10 +36,10 @@ def main() -> None:
         exit(-1)
     if inputs["action"] == "analyze":
         logging.info(colored("Searching for design patterns...", "yellow"))
-        computation_results: dict[str, dict[str, dict[str, bool]]] = scanner.get_design_pattern_statistics()
+        computation_results = scanner.get_design_pattern_statistics()
     else:
         logging.info(colored("Generating design pattern descriptors...", "yellow"))
-        computation_results: dict[str, list[dict]] = scanner.generate_design_pattern_descriptors()
+        computation_results = scanner.generate_design_pattern_descriptors()
     if not computation_results:
         logging.error(colored("The computation did not produce any results!, aborting...", "red"))
         exit(-1)
