@@ -50,8 +50,8 @@ class SolidityScanner:
         """
         try:
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored("Parsing solidity source code file:", "blue"),
-                                               colored(solidity_file_path, "cyan")))
+                logging.debug("%s '%s'", colored("Parsing solidity source code file:", "blue"),
+                                               colored(solidity_file_path, "cyan"))
             self._visitor = parser.objectify(
                 parser.parse_file(solidity_file_path, loc=True))  # ObjectifySourceUnitVisitor
         except Exception as ex:
@@ -73,12 +73,12 @@ class SolidityScanner:
             if pragma["name"] == "solidity":
                 loaded_version = pragma["value"]
         if loaded_version != settings.solidity_version and not settings.allow_incompatible:
-            logging.warning("{} '{}'\t{} '{}'".format(
+            logging.warning("%s '%s'\t%s '%s'",
                 colored("Compatible Version:", "magenta"),
                 colored(settings.solidity_version, "cyan"),
                 colored("Loaded Version:", "magenta"),
                 colored(loaded_version, "cyan")
-            ))
+            )
             logging.warning(colored("The provided solidity source code file's version is not compatible.", "magenta"))
             user_confirm: bool = ask_confirm("Proceed anyway?")
             if not user_confirm:
@@ -104,14 +104,14 @@ class SolidityScanner:
         if settings.verbose:
             for item_type in ["functions", "modifiers"]:
                 for name, statements in self._statements_collector[smart_contract_name][item_type].items():
-                    logging.debug("{} {}".format(colored(f"Rebuilding {item_type}:", "magenta"), colored(name, "cyan")))
+                    logging.debug("%s %s", colored(f"Rebuilding {item_type}:", "magenta"), colored(name, "cyan"))
                     for statement in statements:
                         result: str = self._build_node_string(statement)
                         if "UDST_Error" in result:
                             pprint.pprint(statement)
                             exit(-1)
                         logging.debug(
-                            "\t{} {}".format(colored("Rebuilt statement:", "magenta"), colored(result, "cyan")))
+                            "\t%s %s", colored("Rebuilt statement:", "magenta"), colored(result, "cyan"))
 
     def _compare_return_parameters(self, fn_return_parameters: list[dict], provided_parameters: list[dict]) -> bool:
         """
@@ -143,8 +143,8 @@ class SolidityScanner:
         string_patters: list[str] = list(filter(lambda d: "*" in d, search_for))
         if string_patters:
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored("Checking descriptor's string patterns:", "magenta"),
-                                               colored(pprint.pformat(string_patters), "cyan")))
+                logging.debug("%s '%s'", colored("Checking descriptor's string patterns:", "magenta"),
+                                               colored(pprint.pformat(string_patters), "cyan"))
             for pattern_str in string_patters:
                 for smart_contract_item in search_in:
                     if "*any*" in pattern_str:
@@ -156,8 +156,8 @@ class SolidityScanner:
         string_literals: list[str] = list(filter(lambda d: "*" not in d, search_for))
         if string_literals:
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored("Checking descriptor's string literals:", "magenta"),
-                                               colored(pprint.pformat(string_literals), "cyan")))
+                logging.debug("%s '%s'", colored("Checking descriptor's string literals:", "magenta"),
+                                               colored(pprint.pformat(string_literals), "cyan"))
             for item in string_literals:
                 if item in search_in:
                     return True
@@ -539,12 +539,12 @@ class SolidityScanner:
             logging.debug((colored("No comparisons found", "magenta")))
             return False
         if settings.verbose:
-            logging.debug("{} {}".format(colored("Found Comparisons:", "magenta"),
-                                         colored(str(len(smart_contract_comparisons)), "cyan")))
+            logging.debug("%s %s", colored("Found Comparisons:", "magenta"),
+                                         colored(str(len(smart_contract_comparisons)), "cyan"))
             for smart_contract_comparison in smart_contract_comparisons:
-                logging.debug("{} {}".format(
+                logging.debug("%s %s",
                     colored(f"Line {str(smart_contract_comparison['loc']['end']['line'])}:", "magenta"),
-                    colored(self._build_node_string(smart_contract_comparison), "cyan")))
+                    colored(self._build_node_string(smart_contract_comparison), "cyan"))
         for provided_operation in binary_operations:
             operand_1: str = provided_operation["operand_1"].lower()
             operand_2: str = provided_operation["operand_2"].lower()
@@ -684,7 +684,7 @@ class SolidityScanner:
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         for struct_name in smart_contract_node.structs:
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored("Found struct:", "magenta"), colored(struct_name, "cyan")))
+                logging.debug("%s '%s'", colored("Found struct:", "magenta"), colored(struct_name, "cyan"))
             struct_size: int = 0
             members: list[dict] = smart_contract_node.structs[struct_name]["members"]
             for member in members:
@@ -750,8 +750,8 @@ class SolidityScanner:
         results: dict[str, bool] = {}
         descriptor: dict = self._descriptors[descriptor_index]
         if settings.verbose:
-            logging.debug("{} '{}'".format(colored(f"Executing descriptor:", "blue"),
-                                           colored(descriptor['name'], "cyan")))
+            logging.debug("%s '%s'", colored(f"Executing descriptor:", "blue"),
+                                           colored(descriptor['name'], "cyan"))
         for check in descriptor["checks"]:
             check_type: str = check["check_type"]
             check_result: bool = False
@@ -759,7 +759,7 @@ class SolidityScanner:
                 logging.error(colored(f"The check-type: '{check_type}' has not been implemented yet!", "red"))
                 continue
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored(f"Testing check:", "blue"), colored(check_type, "cyan")))
+                logging.debug("%s '%s'", colored(f"Testing check:", "blue"), colored(check_type, "cyan"))
             match check_type:
                 case "inheritance":
                     check_result = self._test_inheritance_check(smart_contract_name=smart_contract_name,
@@ -807,8 +807,8 @@ class SolidityScanner:
         :param smart_contract_name: The name of the smart contract to analyze
         :return: A dictionary containing the usage statistics of each provided descriptor for the selected smart-contract
         """
-        logging.info("{} '{}'".format(colored("Analyzing smart-contract: ", "yellow"),
-                                      colored(smart_contract_name, "cyan")))
+        logging.info("%s '%s'", colored("Analyzing smart-contract: ", "yellow"),
+                                      colored(smart_contract_name, "cyan"))
         self._collect_statements(smart_contract_name=smart_contract_name)
         results: dict[str, dict[str, bool]] = {}
         for (descriptor_index, descriptor_name) in enumerate(map(lambda d: d["name"], self._descriptors)):
@@ -824,13 +824,13 @@ class SolidityScanner:
         """
         results: list[dict] = []
         if settings.verbose:
-            logging.info("{} '{}'".format(colored("Describing smart-contract: ", "yellow"),
-                                          colored(smart_contract_name, "cyan")))
+            logging.info("%s '%s'", colored("Describing smart-contract: ", "yellow"),
+                                          colored(smart_contract_name, "cyan"))
         for test_name in self._generic_tests:
             test_keyword: str = ""
             test_parameters: set = set()
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored(f"Looking on check:", "blue"), colored(test_name, "cyan")))
+                logging.debug("%s '%s'", colored(f"Looking on check:", "blue"), colored(test_name, "cyan"))
             match test_name:
                 case "inheritance":
                     test_parameters = self._get_base_contract_names(smart_contract_name=smart_contract_name)

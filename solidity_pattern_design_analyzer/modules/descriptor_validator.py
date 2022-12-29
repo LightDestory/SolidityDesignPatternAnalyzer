@@ -25,7 +25,7 @@ class DescriptorValidator:
         error: str = ""
         try:
             if settings.verbose:
-                logging.debug("{} '{}'".format(colored(f"Parsing schema:", "blue"), colored(schema_path, "cyan")))
+                logging.debug("%s '%s'", colored(f"Parsing schema:", "blue"), colored(schema_path, "cyan"))
             with open(schema_path, "r") as schema_fp:
                 self._descriptor_schema = json.load(schema_fp)
         except OSError as fp_error:
@@ -68,15 +68,15 @@ class DescriptorValidator:
             error: str = ""
             try:
                 if settings.verbose:
-                    logging.debug("{} '{}'".format(colored(f"Checking descriptor:", "blue"),
-                                                   colored(str(descriptor_path), "cyan")))
+                    logging.debug("%s '%s'", colored(f"Checking descriptor:", "blue"),
+                                                   colored(str(descriptor_path), "cyan"))
                 with open(descriptor_path, "r") as descriptor_fp:
                     descriptor_object = json.load(descriptor_fp)
                 validate(instance=descriptor_object, schema=self._descriptor_schema)
                 if settings.verbose:
-                    logging.debug("{} {}".format(colored(descriptor_object['name'], "cyan"),
+                    logging.debug("%s %s", colored(descriptor_object['name'], "cyan"),
                                                  colored("- Descriptor has been deserialized and "
-                                                         "validated successfully!", "green")))
+                                                         "validated successfully!", "green"))
                 descriptors.append(descriptor_object)
             except OSError as fp_error:
                 error = f"An error occurred while trying to open the file '{descriptor_path}', skipping...\n{fp_error}"

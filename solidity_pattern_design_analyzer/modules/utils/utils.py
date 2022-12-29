@@ -57,7 +57,7 @@ def is_input_valid(inputs: dict[str, str]) -> bool:
         input_path = Path(input_value)
         error: str = ""
         if settings.verbose:
-            logging.debug("{} '{}'".format(colored(f"Checking {input_type}:", "blue"), colored(input_value, "cyan")))
+            logging.debug("%s '%s'", colored(f"Checking {input_type}:", "blue"), colored(input_value, "cyan"))
         if not input_path.exists():
             error = f"The input '{input_value}' does not exist, aborting..."
         elif input_type == "target" or input_type == "schema":
@@ -109,7 +109,7 @@ def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, bo
     try:
         with open(output_path, "w") as output_fp:
             output_fp.write(json.dumps(results))
-            logging.info("{} '{}'".format(colored("Results saved to:", "green"), colored(str(output_path), "cyan")))
+            logging.info("%s '%s'", colored("Results saved to:", "green"), colored(str(output_path), "cyan"))
     except IOError as fp_error:
         logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
 
@@ -130,7 +130,7 @@ def save_describe_results(target: str, results: dict[str, list[dict]]) -> None:
         try:
             with open(output_path, "w") as output_fp:
                 output_fp.write(json.dumps(descriptor))
-                logging.info("{} '{}'".format(colored("Descriptor saved to:", "green"), colored(str(output_path), "cyan")))
+                logging.info("%s '%s'", colored("Descriptor saved to:", "green"), colored(str(output_path), "cyan"))
         except IOError as fp_error:
             logging.error(colored(f"Unable to save descriptor to: '{output_path}'\n{fp_error}", "red"))
 

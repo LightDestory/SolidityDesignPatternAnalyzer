@@ -1,5 +1,4 @@
 import logging
-import pprint
 from pathlib import Path
 
 from colorama import init
