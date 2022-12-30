@@ -3,7 +3,7 @@
     "checks": [
         {
             "check_type": "modifier",
-            "modifiers": ["when*", "after*", "before*","only*", "if*", "on*"]
+            "modifiers": ["when*", "after*", "before*","only*", "if*", "on*", "haltin*", "disablein*", "enablein*"]
         }
     ]
 }

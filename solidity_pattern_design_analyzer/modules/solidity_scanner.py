@@ -18,7 +18,7 @@ class SolidityScanner:
         "enum_definition"
     ]
     _specialized_tests: list[str] = [
-        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction"
+        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction", "state_toggle"
     ]
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
@@ -51,7 +51,7 @@ class SolidityScanner:
         try:
             if settings.verbose:
                 logging.debug("%s '%s'", colored("Parsing solidity source code file:", "blue"),
-                                               colored(solidity_file_path, "cyan"))
+                              colored(solidity_file_path, "cyan"))
             self._visitor = parser.objectify(
                 parser.parse_file(solidity_file_path, loc=True))  # ObjectifySourceUnitVisitor
         except Exception as ex:
@@ -74,11 +74,11 @@ class SolidityScanner:
                 loaded_version = pragma["value"]
         if loaded_version != settings.solidity_version and not settings.allow_incompatible:
             logging.warning("%s '%s'\t%s '%s'",
-                colored("Compatible Version:", "magenta"),
-                colored(settings.solidity_version, "cyan"),
-                colored("Loaded Version:", "magenta"),
-                colored(loaded_version, "cyan")
-            )
+                            colored("Compatible Version:", "magenta"),
+                            colored(settings.solidity_version, "cyan"),
+                            colored("Loaded Version:", "magenta"),
+                            colored(loaded_version, "cyan")
+                            )
             logging.warning(colored("The provided solidity source code file's version is not compatible.", "magenta"))
             user_confirm: bool = ask_confirm("Proceed anyway?")
             if not user_confirm:
@@ -144,7 +144,7 @@ class SolidityScanner:
         if string_patters:
             if settings.verbose:
                 logging.debug("%s '%s'", colored("Checking descriptor's string patterns:", "magenta"),
-                                               colored(pprint.pformat(string_patters), "cyan"))
+                              colored(pprint.pformat(string_patters), "cyan"))
             for pattern_str in string_patters:
                 for smart_contract_item in search_in:
                     if "*any*" in pattern_str:
@@ -157,7 +157,7 @@ class SolidityScanner:
         if string_literals:
             if settings.verbose:
                 logging.debug("%s '%s'", colored("Checking descriptor's string literals:", "magenta"),
-                                               colored(pprint.pformat(string_literals), "cyan"))
+                              colored(pprint.pformat(string_literals), "cyan"))
             for item in string_literals:
                 if item in search_in:
                     return True
@@ -234,6 +234,8 @@ class SolidityScanner:
         declaration_text: str = "(" if len(variables) > 1 else ""
         initialization_text: str = ""
         for index, variable in enumerate(variables):
+            if not variable:
+                continue
             storage_location: str = f" {variable['storageLocation']} " if variable["storageLocation"] else " "
             declaration_text += f"{self._build_node_string(variable['typeName'])}{storage_location}{variable['name']}"
             if index < len(variables) - 1:
@@ -525,6 +527,8 @@ class SolidityScanner:
                     for statement in statements:
                         collector += self._find_node_by_type(statement, type_filter)
                     return collector
+                case "VariableDeclarationStatement":
+                    return self._find_node_by_type(node["initialValue"], type_filter)
                 case _:
                     return []
 
@@ -543,11 +547,11 @@ class SolidityScanner:
             return False
         if settings.verbose:
             logging.debug("%s %s", colored("Found Comparisons:", "magenta"),
-                                         colored(str(len(smart_contract_comparisons)), "cyan"))
+                          colored(str(len(smart_contract_comparisons)), "cyan"))
             for smart_contract_comparison in smart_contract_comparisons:
                 logging.debug("%s %s",
-                    colored(f"Line {str(smart_contract_comparison['loc']['end']['line'])}:", "magenta"),
-                    colored(self._build_node_string(smart_contract_comparison), "cyan"))
+                              colored(f"Line {str(smart_contract_comparison['loc']['end']['line'])}:", "magenta"),
+                              colored(self._build_node_string(smart_contract_comparison), "cyan"))
         for provided_operation in binary_operations:
             operand_1: str = provided_operation["operand_1"].lower()
             operand_2: str = provided_operation["operand_2"].lower()
@@ -743,6 +747,23 @@ class SolidityScanner:
                         return True
         return False
 
+    def _test_state_toggle_check(self, smart_contract_name: str) -> bool:
+        """
+        This function executes the state_toggle check: it looks for boolean state variable toggles
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the state_toggle check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        boolean_states: list[str] = [k for k, v in smart_contract_node.stateVars.items() if
+                                     v["typeName"]["name"] == "bool"]
+        assignments: set[str] = set([self._build_node_string(assignment).lower() for assignment in
+                                     self._get_all_assignment_statements(smart_contract_name=smart_contract_name)])
+        for boolean_state in boolean_states:
+            for assignment in assignments:
+                if f"{boolean_state} = !{boolean_state}".lower() == assignment:
+                    return True
+        return False
+
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
         This function tests all the selected descriptor's checks
@@ -754,7 +775,7 @@ class SolidityScanner:
         descriptor: dict = self._descriptors[descriptor_index]
         if settings.verbose:
             logging.debug("%s '%s'", colored(f"Executing descriptor:", "blue"),
-                                           colored(descriptor['name'], "cyan"))
+                          colored(descriptor['name'], "cyan"))
         for check in descriptor["checks"]:
             check_type: str = check["check_type"]
             check_result: bool = False
@@ -796,6 +817,8 @@ class SolidityScanner:
                                                                     enum_names=check["enum_names"])
                 case "check_effects_interaction":
                     check_result = self._test_check_effects_interaction_check(smart_contract_name=smart_contract_name)
+                case "state_toggle":
+                    check_result = self._test_state_toggle_check(smart_contract_name=smart_contract_name)
             if settings.verbose:
                 if check_result:
                     logging.debug(colored("Test passed!", "green"))
@@ -811,7 +834,7 @@ class SolidityScanner:
         :return: A dictionary containing the usage statistics of each provided descriptor for the selected smart-contract
         """
         logging.info("%s '%s'", colored("Analyzing smart-contract: ", "yellow"),
-                                      colored(smart_contract_name, "cyan"))
+                     colored(smart_contract_name, "cyan"))
         self._collect_statements(smart_contract_name=smart_contract_name)
         results: dict[str, dict[str, bool]] = {}
         for (descriptor_index, descriptor_name) in enumerate(map(lambda d: d["name"], self._descriptors)):
@@ -828,7 +851,7 @@ class SolidityScanner:
         results: list[dict] = []
         if settings.verbose:
             logging.info("%s '%s'", colored("Describing smart-contract: ", "yellow"),
-                                          colored(smart_contract_name, "cyan"))
+                         colored(smart_contract_name, "cyan"))
         for test_name in self._generic_tests:
             test_keyword: str = ""
             test_parameters: list[dict] | set[str] = set()
@@ -842,7 +865,7 @@ class SolidityScanner:
                     test_parameters = self._get_modifier_names(smart_contract_name=smart_contract_name)
                     test_keyword = "modifiers"
                 case "comparison":
-                    smart_contract_comparisons= self._get_all_comparison_statements(
+                    smart_contract_comparisons = self._get_all_comparison_statements(
                         smart_contract_name=smart_contract_name)
                     test_parameters = []
                     for comparison in smart_contract_comparisons:

@@ -1,0 +1,11 @@
+{
+    "name": "Relay",
+    "checks": [
+        {
+            "check_type": "fn_call",
+            "callable_function": [
+                "*delegatecall(msg.data)"
+            ]
+        }
+    ]
+}

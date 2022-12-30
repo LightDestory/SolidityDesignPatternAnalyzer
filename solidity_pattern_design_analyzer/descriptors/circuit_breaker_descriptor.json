@@ -1,0 +1,16 @@
+{
+    "name": "Circuit Breaker",
+    "checks": [
+        {
+            "check_type": "state_toggle"
+        },
+        {
+            "check_type": "fn_definition",
+            "fn_names": ["toggleContractStopped"]
+        },
+        {
+            "check_type": "modifier",
+            "modifiers": ["haltInEmergency", "enableInEmergency"]
+        }
+    ]
+}
