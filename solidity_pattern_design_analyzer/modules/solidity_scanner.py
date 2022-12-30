@@ -15,10 +15,10 @@ class SolidityScanner:
     _implemented_tests: list[str]
     _generic_tests: list[str] = [
         "comparison", "inheritance", "modifier", "fn_return_parameters", "fn_call", "fn_definition", "event_emit",
-        "enum_definition"
+        "enum_definition", "state_toggle"
     ]
     _specialized_tests: list[str] = [
-        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction", "state_toggle"
+        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction"
     ]
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
@@ -309,6 +309,11 @@ class SolidityScanner:
                 declaration_text += ", "
         declaration_text += ")"
         return declaration_text
+
+    def _get_all_bool_state_vars(self, smart_contract_name: str) -> set[str]:
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        return set([k.lower() for k, v in smart_contract_node.stateVars.items() if
+                    v["typeName"]["name"] == "bool"])
 
     def _get_base_contract_names(self, smart_contract_name: str) -> set[str]:
         """
@@ -668,6 +673,23 @@ class SolidityScanner:
         unique_enum_names = set(map(lambda d: d.lower(), enum_names))
         return self._compare_literal(search_for=unique_enum_names, search_in=smart_contract_enum_names)
 
+    def _test_state_toggle_check(self, smart_contract_name: str, state_names: list[str]) -> bool:
+        """
+        This function executes the state_toggle check: it looks for boolean state variable toggles
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the state_toggle check is valid, False otherwise
+        """
+        boolean_states: set[str] = self._get_all_bool_state_vars(smart_contract_name=smart_contract_name)
+        assignments: set[str] = set([self._build_node_string(assignment).lower() for assignment in
+                                     self._get_all_assignment_statements(smart_contract_name=smart_contract_name)])
+        unique_state_names: set[str] = set(map(lambda d: d.lower(), state_names))
+        for boolean_state in boolean_states:
+            if self._compare_literal(search_for=unique_state_names, search_in={boolean_state}):
+                for assignment in assignments:
+                    if f"{boolean_state} = !{boolean_state}" == assignment:
+                        return True
+        return False
+
     def _test_rejector_check(self, smart_contract_name: str) -> bool:
         """
         This function executes the rejector check: it looks if the contract implements only a rejection fallback
@@ -747,23 +769,6 @@ class SolidityScanner:
                         return True
         return False
 
-    def _test_state_toggle_check(self, smart_contract_name: str) -> bool:
-        """
-        This function executes the state_toggle check: it looks for boolean state variable toggles
-        :param smart_contract_name: The name of the smart contract to analyze
-        :return: True if the state_toggle check is valid, False otherwise
-        """
-        smart_contract_node = self._visitor.contracts[smart_contract_name]
-        boolean_states: list[str] = [k for k, v in smart_contract_node.stateVars.items() if
-                                     v["typeName"]["name"] == "bool"]
-        assignments: set[str] = set([self._build_node_string(assignment).lower() for assignment in
-                                     self._get_all_assignment_statements(smart_contract_name=smart_contract_name)])
-        for boolean_state in boolean_states:
-            for assignment in assignments:
-                if f"{boolean_state} = !{boolean_state}".lower() == assignment:
-                    return True
-        return False
-
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
         This function tests all the selected descriptor's checks
@@ -818,7 +823,8 @@ class SolidityScanner:
                 case "check_effects_interaction":
                     check_result = self._test_check_effects_interaction_check(smart_contract_name=smart_contract_name)
                 case "state_toggle":
-                    check_result = self._test_state_toggle_check(smart_contract_name=smart_contract_name)
+                    check_result = self._test_state_toggle_check(smart_contract_name=smart_contract_name,
+                                                                 state_names=check["state_names"])
             if settings.verbose:
                 if check_result:
                     logging.debug(colored("Test passed!", "green"))
@@ -833,8 +839,7 @@ class SolidityScanner:
         :param smart_contract_name: The name of the smart contract to analyze
         :return: A dictionary containing the usage statistics of each provided descriptor for the selected smart-contract
         """
-        logging.info("%s '%s'", colored("Analyzing smart-contract: ", "yellow"),
-                     colored(smart_contract_name, "cyan"))
+        logging.info("%s '%s'", colored("Analyzing smart-contract: ", "yellow"), colored(smart_contract_name, "cyan"))
         self._collect_statements(smart_contract_name=smart_contract_name)
         results: dict[str, dict[str, bool]] = {}
         for (descriptor_index, descriptor_name) in enumerate(map(lambda d: d["name"], self._descriptors)):
@@ -898,6 +903,9 @@ class SolidityScanner:
                 case "enum_definition":
                     test_parameters = self._get_enum_names(smart_contract_name=smart_contract_name)
                     test_keyword = "enum_names"
+                case "state_toggle":
+                    test_parameters = self._get_all_bool_state_vars(smart_contract_name=smart_contract_name)
+                    test_keyword = "state_names"
                 case _:
                     logging.error(f"{test_name}  not implemented")
             if test_parameters:

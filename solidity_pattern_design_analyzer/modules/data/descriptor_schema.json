@@ -275,10 +275,21 @@
               "check_type": {
                 "type": "string",
                 "const": "state_toggle"
+              },
+              "state_names": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
               }
             },
             "required": [
-              "check_type"
+              "check_type",
+              "state_names"
             ]
           }
         ]
