@@ -1,0 +1,8 @@
+{
+    "name": "Eternal Storage",
+    "checks": [
+        {
+            "check_type": "eternal_storage"
+        }
+    ]
+}

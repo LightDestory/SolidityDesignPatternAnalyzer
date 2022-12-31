@@ -303,6 +303,18 @@
             "required": [
               "check_type"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "eternal_storage"
+              }
+            },
+            "required": [
+              "check_type"
+            ]
           }
         ]
       },

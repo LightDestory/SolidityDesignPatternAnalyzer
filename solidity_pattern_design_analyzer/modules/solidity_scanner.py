@@ -18,7 +18,8 @@ class SolidityScanner:
         "enum_definition", "state_toggle"
     ]
     _specialized_tests: list[str] = [
-        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction", "relay"
+        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction", "relay",
+        "eternal_storage"
     ]
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
@@ -311,9 +312,27 @@ class SolidityScanner:
         return declaration_text
 
     def _get_all_bool_state_vars(self, smart_contract_name: str) -> set[str]:
+        """
+        This function returns the name of all the boolean state vars of the specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A set of state vars names
+        """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         return set([k.lower() for k, v in smart_contract_node.stateVars.items() if
-                    v["typeName"]["name"] == "bool"])
+                    "name" in v["typeName"] and v["typeName"]["name"] == "bool"])
+
+    def _get_all_mapping_state_vars(self, smart_contract_name: str) -> dict[str, str]:
+        """
+        This function returns the name of all the mapping state vars of the specified smart-contract
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: A set of state vars names
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        mappings: dict[str, str] = {}
+        for var_name, var_node in smart_contract_node.stateVars.items():
+            if "type" in var_node["typeName"] and var_node["typeName"]["type"] == "Mapping":
+                mappings[var_name.lower()] = var_node["visibility"]
+        return mappings
 
     def _get_base_contract_names(self, smart_contract_name: str) -> set[str]:
         """
@@ -788,6 +807,23 @@ class SolidityScanner:
                                             statements_list=statements)
         return False
 
+    def _test_eternal_storage_check(self, smart_contract_name: str) -> bool:
+        """
+        This function executes the eternal_storage check: it looks if the contract implements mappings, setter and getter
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the eternal_storage check is valid, False otherwise
+        """
+        smart_contract_mappings: dict[str, str] = self._get_all_mapping_state_vars(smart_contract_name=smart_contract_name)
+        smart_contract_fn_names: set[str] = self._get_fn_names(smart_contract_name=smart_contract_name)
+        for mapping_name, mapping_visibility in smart_contract_mappings.items():
+            if mapping_visibility == "public":
+                if f"set{mapping_name}" not in smart_contract_fn_names:
+                    return False
+            else:
+                if f"set{mapping_name}" not in smart_contract_fn_names or f"get{mapping_name}" not in smart_contract_fn_names:
+                    return False
+        return True
+
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
         This function tests all the selected descriptor's checks
@@ -846,6 +882,8 @@ class SolidityScanner:
                                                                  state_names=check["state_names"])
                 case "relay":
                     check_result = self._test_relay_check(smart_contract_name=smart_contract_name)
+                case "eternal_storage":
+                    check_result = self._test_eternal_storage_check(smart_contract_name=smart_contract_name)
             if settings.verbose:
                 if check_result:
                     logging.debug(colored("Test passed!", "green"))
