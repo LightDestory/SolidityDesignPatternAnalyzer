@@ -291,6 +291,18 @@
               "check_type",
               "state_names"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
+                "const": "relay"
+              }
+            },
+            "required": [
+              "check_type"
+            ]
           }
         ]
       },

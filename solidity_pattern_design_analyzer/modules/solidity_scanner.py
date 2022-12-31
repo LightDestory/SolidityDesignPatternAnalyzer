@@ -18,7 +18,7 @@ class SolidityScanner:
         "enum_definition", "state_toggle"
     ]
     _specialized_tests: list[str] = [
-        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction"
+        "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction", "relay"
     ]
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
@@ -624,16 +624,20 @@ class SolidityScanner:
                 return True
         return False
 
-    def _test_fn_call_check(self, smart_contract_name: str, function_calls: list[str]) -> bool:
+    def _test_fn_call_check(self, smart_contract_name: str, function_calls: list[str],
+                            statements_list: list[dict] = None) -> bool:
         """
         This function executes the fn_call check: it looks for specific functions call
         :param smart_contract_name: The name of the smart contract to analyze
         :param function_calls: A list of function calls
+        :param statements_list: A list of statements to lookup, if omitted all smart-contact's statements will be used
         :return: True if the fn_call check is valid, False otherwise
         """
+        if not statements_list:
+            statements_list = self._get_all_statements(smart_contract_name=smart_contract_name,
+                                                       type_filter="FunctionCall")
         smart_contract_function_calls: set[str] = set([self._build_node_string(fn).lower() for fn in
-                                                       self._get_all_statements(smart_contract_name=smart_contract_name,
-                                                                                type_filter="FunctionCall")])
+                                                       statements_list])
         unique_function_calls: set[str] = set(map(lambda d: d.lower(), function_calls))
         return self._compare_literal(search_for=unique_function_calls, search_in=smart_contract_function_calls)
 
@@ -769,6 +773,21 @@ class SolidityScanner:
                         return True
         return False
 
+    def _test_relay_check(self, smart_contract_name: str) -> bool:
+        """
+        This function executes the relay check: it looks if the contract implements a fallback with a delegatecall
+        :param smart_contract_name: The name of the smart contract to analyze
+        :return: True if the relay check is valid, False otherwise
+        """
+        smart_contract_node = self._visitor.contracts[smart_contract_name]
+        relay_fn_call: str = "*delegatecall(msg.data)"
+        smart_contract_functions: list[str] = list(self._get_fn_names(smart_contract_name=smart_contract_name))
+        if "fallback" in smart_contract_functions and smart_contract_node.functions["fallback"].isFallback:
+            statements: list[dict] = self._statements_collector[smart_contract_name]["functions"]["fallback"]
+            return self._test_fn_call_check(smart_contract_name=smart_contract_name, function_calls=[relay_fn_call],
+                                            statements_list=statements)
+        return False
+
     def _execute_descriptor(self, smart_contract_name: str, descriptor_index: int) -> dict[str, bool]:
         """
         This function tests all the selected descriptor's checks
@@ -825,6 +844,8 @@ class SolidityScanner:
                 case "state_toggle":
                     check_result = self._test_state_toggle_check(smart_contract_name=smart_contract_name,
                                                                  state_names=check["state_names"])
+                case "relay":
+                    check_result = self._test_relay_check(smart_contract_name=smart_contract_name)
             if settings.verbose:
                 if check_result:
                     logging.debug(colored("Test passed!", "green"))
