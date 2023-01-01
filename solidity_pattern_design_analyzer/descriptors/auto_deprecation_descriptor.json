@@ -2,6 +2,10 @@
     "name": "Auto Deprecation",
     "checks": [
         {
+            "check_type": "inheritance",
+            "parent_names": ["deprecatable"]
+        },
+        {
             "check_type": "modifier",
             "modifiers": ["willDeprecate", "whenDeprecated"]
         },

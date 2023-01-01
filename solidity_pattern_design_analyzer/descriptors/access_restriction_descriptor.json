@@ -2,6 +2,10 @@
     "name": "Access Restriction",
     "checks": [
         {
+            "check_type": "inheritance",
+            "parent_names": ["AccessRestriction", "restrictable*"]
+        },
+        {
             "check_type": "modifier",
             "modifiers": ["when*", "after*", "before*","only*", "if*", "on*", "haltin*", "disablein*", "enablein*"]
         }

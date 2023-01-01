@@ -2,6 +2,10 @@
     "name": "Relay",
     "checks": [
         {
+            "check_type": "inheritance",
+            "parent_names": ["relay", "proxy"]
+        },
+        {
             "check_type": "relay"
         }
     ]

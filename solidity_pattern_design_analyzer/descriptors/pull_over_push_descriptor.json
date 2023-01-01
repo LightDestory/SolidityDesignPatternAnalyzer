@@ -2,6 +2,10 @@
     "name": "Pull Over Push",
     "checks": [
         {
+            "check_type": "inheritance",
+            "parent_names": ["pullpayment"]
+        },
+        {
             "check_type": "fn_call",
             "callable_function": [
                 "payable(msg.sender).transfer(*any*);"

@@ -2,8 +2,12 @@
     "name": "Circuit Breaker",
     "checks": [
         {
+            "check_type": "inheritance",
+            "parent_names": ["pausable"]
+        },
+        {
             "check_type": "state_toggle",
-            "state_names": ["stopped*", "active*", "running*", "disable*"]
+            "state_names": ["paused*","stopped*", "active*", "running*", "disable*"]
         },
         {
             "check_type": "fn_definition",
@@ -11,7 +15,7 @@
         },
         {
             "check_type": "modifier",
-            "modifiers": ["haltInEmergency", "enableInEmergency"]
+            "modifiers": ["haltInEmergency", "enableInEmergency", "whenNotPaused", "whenPaused"]
         }
     ]
 }

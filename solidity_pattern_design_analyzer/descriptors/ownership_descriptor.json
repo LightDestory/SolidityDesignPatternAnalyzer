@@ -3,7 +3,7 @@
     "checks": [
         {
             "check_type": "inheritance",
-            "parent_names": ["ownable", "ownership", "owner"]
+            "parent_names": ["ownable*", "ownership", "owner"]
         },
         {
             "check_type": "modifier",
@@ -15,6 +15,11 @@
                 {
                     "operator": "==",
                     "operand_1": "msg.sender",
+                    "operand_2": "owner"
+                },
+                {
+                    "operator": "==",
+                    "operand_1": "msgsender",
                     "operand_2": "owner"
                 }
             ]

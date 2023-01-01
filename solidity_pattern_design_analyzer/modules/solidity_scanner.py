@@ -566,28 +566,26 @@ class SolidityScanner:
         """
         smart_contract_comparisons: list[dict] = self._get_all_comparison_statements(
             smart_contract_name=smart_contract_name)
+        smart_contract_operation_operands: list[tuple] = list()
         if not smart_contract_comparisons:
             logging.debug((colored("No comparisons found", "magenta")))
             return False
         if settings.verbose:
             logging.debug("%s %s", colored("Found Comparisons:", "magenta"),
                           colored(str(len(smart_contract_comparisons)), "cyan"))
-            for smart_contract_comparison in smart_contract_comparisons:
+        for smart_contract_comparison in smart_contract_comparisons:
+            if settings.verbose:
                 logging.debug("%s %s",
                               colored(f"Line {str(smart_contract_comparison['loc']['end']['line'])}:", "magenta"),
                               colored(self._build_node_string(smart_contract_comparison), "cyan"))
+            smart_contract_operation_operands.append((
+                self._get_statement_operand(smart_contract_comparison["right"]).lower(),
+                self._get_statement_operand(smart_contract_comparison["left"]).lower()))
         for provided_operation in binary_operations:
             operand_1: str = provided_operation["operand_1"].lower()
             operand_2: str = provided_operation["operand_2"].lower()
             operator: str = provided_operation["operator"]
-            operators: list[str] = [operator, self._reverse_comparison_operand_map[operator]]
-            smart_contract_operation_operands: list[tuple] = list()
-            for smart_contract_comparison in smart_contract_comparisons:
-                smart_contract_operation_operands.append((
-                    self._get_statement_operand(smart_contract_comparison["right"]).lower(),
-                    self._get_statement_operand(smart_contract_comparison["left"]).lower()))
-            if not smart_contract_operation_operands:
-                return False
+            reversed_operator: str = self._reverse_comparison_operand_map[operator]
             for (smart_contract_operand_1, smart_contract_operand_2) in smart_contract_operation_operands:
                 match operator:
                     case "==":
@@ -595,9 +593,8 @@ class SolidityScanner:
                                 or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
                             return True
                     case _:
-                        if (operator == operators[0] and (
-                                operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2)) \
-                                or (operator == operators[1] and (
+                        if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
+                                or (operator == reversed_operator and (
                                 operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2)):
                             return True
         return False
@@ -799,7 +796,7 @@ class SolidityScanner:
         :return: True if the relay check is valid, False otherwise
         """
         smart_contract_node = self._visitor.contracts[smart_contract_name]
-        relay_fn_call: str = "*delegatecall(msg.data)"
+        relay_fn_call: str = "*delegatecall(*any*)"
         smart_contract_functions: list[str] = list(self._get_fn_names(smart_contract_name=smart_contract_name))
         if "fallback" in smart_contract_functions and smart_contract_node.functions["fallback"].isFallback:
             statements: list[dict] = self._statements_collector[smart_contract_name]["functions"]["fallback"]
@@ -814,6 +811,8 @@ class SolidityScanner:
         :return: True if the eternal_storage check is valid, False otherwise
         """
         smart_contract_mappings: dict[str, str] = self._get_all_mapping_state_vars(smart_contract_name=smart_contract_name)
+        if not smart_contract_mappings:
+            return False
         smart_contract_fn_names: set[str] = self._get_fn_names(smart_contract_name=smart_contract_name)
         for mapping_name, mapping_visibility in smart_contract_mappings.items():
             if mapping_visibility == "public":
