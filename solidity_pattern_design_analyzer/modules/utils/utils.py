@@ -1,8 +1,6 @@
 import argparse
 import json
 import logging
-import operator
-from functools import reduce
 
 from pathlib import Path
 from termcolor import colored

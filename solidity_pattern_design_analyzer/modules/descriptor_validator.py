@@ -51,7 +51,7 @@ class DescriptorValidator:
             files.append(self._descriptors_path)
         else:
             for file in self._descriptors_path.glob("**/*.json"):
-                files.append(Path(file))
+                files.append(file)
         return files
 
     def load_descriptors(self) -> list[dict]:
