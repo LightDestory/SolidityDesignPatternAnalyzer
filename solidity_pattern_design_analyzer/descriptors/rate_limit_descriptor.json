@@ -1,0 +1,13 @@
+{
+    "name": "Rate Limit",
+    "checks": [
+        {
+            "check_type": "modifier",
+            "modifiers": ["ratelimited"]
+        },
+        {
+            "check_type": "inheritance",
+            "parent_names": ["ratelimiter"]
+        }
+    ]
+}

@@ -7,11 +7,11 @@ contract Storage {
     mapping(bytes32 => address) public addressStorage;
 
     // ... // other mappings for other types
-    function setUintValue(bytes32 key, uint256 value) public {
+    function setUintStorage(bytes32 key, uint256 value) public {
         uintStorage[key] = value;
     }
 
-    function setAddressValue(bytes32 key, address value) public {
+    function setaddressStorage(bytes32 key, address value) public {
         addressStorage[key] = value;
     }
 }
@@ -27,7 +27,7 @@ contract Logic {
     // Testing
     function test() public returns (uint256) {
         bytes32 key = keccak256("capybara");
-        _storage.setUintValue(key, 911);
+        _storage.setUintStorage(key, 911);
         return _storage.uintStorage(key);
     }
 }

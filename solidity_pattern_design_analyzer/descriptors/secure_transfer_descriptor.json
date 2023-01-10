@@ -1,10 +1,6 @@
 {
-    "name": "Pull Over Push",
+    "name": "Secure Transfer",
     "checks": [
-        {
-            "check_type": "inheritance",
-            "parent_names": ["pullpayment"]
-        },
         {
             "check_type": "fn_call",
             "callable_function": [
