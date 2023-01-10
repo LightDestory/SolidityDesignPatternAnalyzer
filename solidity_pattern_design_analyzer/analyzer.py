@@ -17,9 +17,11 @@ logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 
 
 def main() -> None:
-    inputs: dict[str, str] = bootstrap(default_descriptor=Path("./descriptors/"))
+    current_dir: Path = Path(__file__).parent
+    settings.schema_path = f"{current_dir}{settings.schema_path}"
+    inputs: dict[str, str] = bootstrap(default_descriptor=Path(f"{current_dir}/descriptors/"))
     desc_validator = DescriptorValidator(inputs["descriptor"])
-    computation_results: dict[str, dict[str, dict[str, bool]]] | dict[str, list[dict]] = {}
+    computation_results: dict[str, dict[str, dict[str, bool]]] | dict[str, list[dict]]
     logging.info(colored("Loading schema...", "yellow"))
     if not desc_validator.load_schema(schema_path=inputs["schema"]):
         exit(-1)
