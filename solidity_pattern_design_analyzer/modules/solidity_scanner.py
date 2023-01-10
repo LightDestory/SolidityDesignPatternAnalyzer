@@ -214,8 +214,13 @@ class SolidityScanner:
         :param call_node: The call node to analyze
         :return: A stringed function call
         """
-        function_name: str = call_node['name'] if "name" in call_node else self._build_node_string(
-            call_node["expression"])
+        function_name: str
+        if "name" in call_node:
+            function_name = call_node['name']
+        elif type(call_node["expression"]) == str:
+            function_name = call_node["expression"]
+        else:
+            function_name = self._build_node_string(call_node["expression"])
         function_call: str = f"{function_name}("
         arguments: list[dict] = call_node['arguments']
         for index, argument in enumerate(arguments):
@@ -519,42 +524,48 @@ class SolidityScanner:
             return []
         node_type: str = node["type"] if "type" in node else ""
         if node_type == type_filter:
-            return [node]
+            return [node] + self._find_navigator(node, type_filter, node_type)
         else:
-            match node_type:
-                case "ReturnStatement":
-                    return self._find_node_by_type(node["expression"], type_filter)
-                case "EmitStatement":
-                    return self._find_node_by_type(node["eventCall"], type_filter)
-                case "ExpressionStatement":
-                    return self._find_node_by_type(node["expression"], type_filter)
-                case "FunctionCall":
-                    arguments: dict = node["arguments"]
-                    collector: list[dict] = list()
-                    for argument in arguments:
-                        collector += self._find_node_by_type(argument, type_filter)
-                    return collector
-                case "IfStatement":
-                    return self._find_node_by_type(node["condition"], type_filter) + \
-                        self._find_node_by_type(node["TrueBody"], type_filter) + \
-                        self._find_node_by_type(node["FalseBody"], type_filter)
-                case "WhileStatement" | "DoWhileStatement":
-                    return self._find_node_by_type(node["condition"], type_filter) + \
-                        self._find_node_by_type(node["body"], type_filter)
-                case "ForStatement":
-                    return self._find_node_by_type(node["initExpression"], type_filter) + \
-                        self._find_node_by_type(node["conditionExpression"], type_filter) + \
-                        self._find_node_by_type(node["loopExpression"], type_filter)
-                case "Block":
-                    statements: dict = node["statements"]
-                    collector: list[dict] = list()
-                    for statement in statements:
-                        collector += self._find_node_by_type(statement, type_filter)
-                    return collector
-                case "VariableDeclarationStatement":
-                    return self._find_node_by_type(node["initialValue"], type_filter)
-                case _:
-                    return []
+            return self._find_navigator(node, type_filter, node_type)
+
+    def _find_navigator(self, node: dict, type_filter: str, node_type: str) -> list[dict]:
+        match node_type:
+            case "ReturnStatement":
+                return self._find_node_by_type(node["expression"], type_filter)
+            case "EmitStatement":
+                return self._find_node_by_type(node["eventCall"], type_filter)
+            case "ExpressionStatement":
+                return self._find_node_by_type(node["expression"], type_filter)
+            case "FunctionCall":
+                arguments: dict = node["arguments"]
+                collector: list[dict] = list()
+                for argument in arguments:
+                    collector += self._find_node_by_type(argument, type_filter)
+                return collector
+            case "IfStatement":
+                return self._find_node_by_type(node["condition"], type_filter) + \
+                    self._find_node_by_type(node["TrueBody"], type_filter) + \
+                    self._find_node_by_type(node["FalseBody"], type_filter)
+            case "WhileStatement" | "DoWhileStatement":
+                return self._find_node_by_type(node["condition"], type_filter) + \
+                    self._find_node_by_type(node["body"], type_filter)
+            case "ForStatement":
+                return self._find_node_by_type(node["initExpression"], type_filter) + \
+                    self._find_node_by_type(node["conditionExpression"], type_filter) + \
+                    self._find_node_by_type(node["loopExpression"], type_filter)
+            case "Block":
+                statements: dict = node["statements"]
+                collector: list[dict] = list()
+                for statement in statements:
+                    collector += self._find_node_by_type(statement, type_filter)
+                return collector
+            case "VariableDeclarationStatement":
+                return self._find_node_by_type(node["initialValue"], type_filter)
+            case "BinaryOperation":
+                return self._find_node_by_type(node["left"], type_filter) + \
+                    self._find_node_by_type(node["right"], type_filter)
+            case _:
+                return []
 
     def _test_comparison_check(self, smart_contract_name: str, binary_operations: list[dict]) -> bool:
         """
@@ -810,7 +821,8 @@ class SolidityScanner:
         :param smart_contract_name: The name of the smart contract to analyze
         :return: True if the eternal_storage check is valid, False otherwise
         """
-        smart_contract_mappings: dict[str, str] = self._get_all_mapping_state_vars(smart_contract_name=smart_contract_name)
+        smart_contract_mappings: dict[str, str] = self._get_all_mapping_state_vars(
+            smart_contract_name=smart_contract_name)
         if not smart_contract_mappings:
             return False
         smart_contract_fn_names: set[str] = self._get_fn_names(smart_contract_name=smart_contract_name)
