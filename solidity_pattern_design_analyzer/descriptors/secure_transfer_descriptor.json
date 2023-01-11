@@ -4,7 +4,8 @@
         {
             "check_type": "fn_call",
             "callable_function": [
-                "transfer(*any*)"
+                "transfer(*any*)",
+                "safeTransfer(*any*)"
             ]
         }
     ]

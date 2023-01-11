@@ -30,7 +30,8 @@ class SolidityScanner:
         "<": ">",
         "<=": ">=",
         ">=": "<=",
-        "==": "=="
+        "==": "==",
+        "!=": "!="
     }
     _assignment_operands: list[str] = ["=", "+=", "-="]
     _fixed_data_type_byte_sizes: dict[str, int] = {
@@ -97,6 +98,8 @@ class SolidityScanner:
         self._statements_collector[smart_contract_name] = {"functions": {}, "modifiers": {}}
         smart_contract_node = self._visitor.contracts[smart_contract_name]
         for fn_name in smart_contract_node.functions:
+            if not smart_contract_node.functions[fn_name]._node.body:
+                continue
             self._statements_collector[smart_contract_name]["functions"][fn_name.lower()] = \
                 smart_contract_node.functions[fn_name]._node.body.statements
         for modifier_name in smart_contract_node.modifiers:
@@ -175,7 +178,7 @@ class SolidityScanner:
                 return f"emit {self._build_node_string(node['eventCall'])}"
             case "ExpressionStatement":
                 return self._build_node_string(node['expression'])
-            case "FunctionCall":
+            case "FunctionCall" | "FunctionCallOptions":
                 return self._build_function_call_string(node)
             case "UnaryOperation":
                 if node["isPrefix"]:
@@ -205,6 +208,10 @@ class SolidityScanner:
                 return "break"
             case "ContinueStatement":
                 return "continue"
+            case "RevertStatement":
+                return f"revert {self._build_node_string(node['functionCall'])}"
+            case "UncheckedStatement":
+                return f"unchecked {self._build_node_string(node['body'])}"
             case _:
                 pprint.pprint(node)
                 raise ValueError(f"Unable to decode the statement: {node_type}")
@@ -558,6 +565,8 @@ class SolidityScanner:
                 return self._find_node_by_type(node["eventCall"], type_filter)
             case "ExpressionStatement":
                 return self._find_node_by_type(node["expression"], type_filter)
+            case "RevertStatement":
+                return self._find_node_by_type(node['functionCall'], type_filter)
             case "FunctionCall":
                 arguments: dict = node["arguments"]
                 collector: list[dict] = list()
@@ -593,6 +602,8 @@ class SolidityScanner:
                 return self._find_node_by_type(node["subExpression"], type_filter)
             case "Conditional":
                 return self._find_node_by_type(node["condition"], type_filter)
+            case "UncheckedStatement":
+                return self._find_node_by_type(node['body'], type_filter)
             case _ if node_type in ["ContinueStatement", "BreakStatement", "NewExpression",
                                     "TupleExpression"] + self._statement_operand_types:
                 return []
@@ -636,7 +647,7 @@ class SolidityScanner:
                 if smart_contract_operator not in operators:
                     continue
                 match smart_contract_operator:
-                    case "==":
+                    case "==" | "!=":
                         if (operand_1 in smart_contract_operand_1 and operand_2 in smart_contract_operand_2) \
                                 or (operand_2 in smart_contract_operand_1 and operand_1 in smart_contract_operand_2):
                             return True
