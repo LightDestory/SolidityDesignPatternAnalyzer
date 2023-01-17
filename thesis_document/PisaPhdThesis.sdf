@@ -1,0 +1,246 @@
+%%
+%% This is file `PisaPhdThesis.sdf',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% PhdThesis.dtx  (with options: `sdf,Pisa,Phd')
+%% 
+%% Copyright (C) 1995-2004 Marco Comini <comini@dimi.uniud.it>.
+%% 
+%% This class is the Phd Thesis format of the Computer Science Deartment of
+%% the Pisa and Udine Universities -- Italy.
+%% 
+%% This class is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.
+%% 
+%% Direct use of code from this class in another class which is either sold
+%% for profit, or not made freely available, is explicitly forbidden by the
+%% author.
+%% 
+\typeout{Class PhdThesis: PisaPhdThesis.sdf 2004/02/17.}
+%%% Defines page shape
+\ifcase\@ptsize% mods for 10 pt
+\ClassWarningNoLine{PhdThesis}
+{You should use 12pt option instead of 10pt}
+\setlength\textheight{53\baselineskip}
+\or% mods for 11 pt
+\ClassWarningNoLine{PhdThesis}
+{You should use 12pt option instead of 11pt}
+\textheight 46\baselineskip
+\or% mods for 12 pt
+\setlength\textheight{42\baselineskip}
+\fi
+\advance\textheight by \topskip
+\setlength\headsep{10mm}
+\setlength\topmargin{3mm}
+\setlength\evensidemargin{5mm}
+\setlength\oddsidemargin{9mm}
+\setlength\textwidth{150mm}
+%%% Provides strings required by maketitlepage (and patched maketitle)
+\def\@phd@address{%
+Dipartimento di Matematica e Informatica\\
+Universit\`a degli Studi di Catania\\
+Via A.Doria, 6\\
+95125 Catania\\
+Italia
+}
+\gdef\@phd@university{%
+%Universit\`a degli Studi di Catania
+%University of Catania
+\vskip 0.75em plus 0.25em minus 0.25em
+{\Large Universit\`{a} degli Studi di Catania}\\ 
+{\large Dipartimento di Matematica e Informatica}\\ 
+{Corso di Laurea Triennale in Informatica}
+
+}
+%%% Redefines maketitle
+\renewcommand*{\maketitle}{
+\begin{titlepage}%
+\let\footnotesize\small
+\let\footnoterule\relax
+\null%\vfil%
+\vskip -1cm
+\begin{center}%
+\textsc{\@phd@university}\par
+\vskip 4em plus .25em minus .25em
+%{\large\textsc{\thesisname\ifx\@phd@number\@empty\else: \@phd@number\fi}\par}
+%\vskip 4em
+{\LARGE\bfseries\@title\par}\vskip2em%
+{\large\begin{tabular}[t]{c}%
+\@author
+\end{tabular}}
+\par
+%\vskip2em plus.25em minus.25em
+\vskip1em\vfill
+
+% submission
+\begin{center}
+%\begin{minipage}[t]{0.45\textwidth}
+\begin{footnotesize}
+%\textsc{
+%\begin{tabular}[t]{c}%
+%a dissertation\\
+%submitted to department of\\ 
+%mathematics and computer science\\
+%and the committee on graduate studies\\
+%of University of Catania\\
+%in fulfillment of the requirements\\
+%for the degree of\\ 
+%doctor of philosophy in computer science
+%\\[1ex]
+%\end{tabular}}
+\end{footnotesize}
+%[5em]\mbox{}
+%\end{minipage}
+\end{center}
+\vskip 1em \vfill
+
+% advisor and head
+\begin{center}
+%\begin{minipage}[t]{0.9\textwidth}
+\begin{tabular}[t]{ccc}
+\textsc{} & \hspace{8cm} &\textsc{Relatore}\\
+ & \hspace{8cm} & Prof. Name\\
+\end{tabular}
+%[5em]\mbox{}
+%\end{minipage}
+\end{center}
+
+
+% supervisors
+\def\and
+{
+\end{tabular}\\[5em]\mbox{}\end{center}\end{minipage}\hfill
+\begin{minipage}[t]{0.45\textwidth}\begin{center}
+\begin{tabular}[t]{c}\textsc{\supervisorname}\\[1ex]%
+}
+\ifx\@phd@supervisor\@empty\else
+\begin{minipage}[t]{0.45\textwidth}
+\begin{center}
+\begin{tabular}[t]{c}%
+\textsc{\supervisorname}\\[1ex]
+\@phd@supervisor
+\end{tabular}\\[5em]\mbox{}
+\end{center}
+\end{minipage}
+\fi%
+
+
+% referees
+\def\and{\end{tabular}\\[5em]\mbox{}\end{center}\end{minipage}\hfill
+\begin{minipage}[t]{0.45\textwidth}\begin{center}
+\begin{tabular}[t]{c}\textsc{\refereename}\\[1ex]%
+}
+\ifx\@phd@referee\@empty\else
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\begin{center}
+\begin{tabular}[t]{c}%
+\textsc{\refereename}\\[1ex]
+\@phd@referee
+\end{tabular}\\[5em]\mbox{}
+\end{center}
+\end{minipage}
+\fi%
+\par
+
+
+% chair
+\def\and{\end{tabular}\\[5em]\mbox{}\end{center}\end{minipage}\hfill
+\begin{minipage}[t]{0.45\textwidth}\begin{center}
+\begin{tabular}[t]{c}\textsc{\chairname}\\[1ex]%
+}
+\ifx\@phd@chair\@empty\else
+\begin{minipage}[t]{0.45\textwidth}
+\begin{center}
+\begin{tabular}[t]{c}%
+\textsc{\chairname}\\[1ex]
+\@phd@chair
+\end{tabular}\\[5em]\mbox{}
+\end{center}
+\end{minipage}
+\fi%
+\vskip1em\vfill
+{\large\ifx\undefined\datename\else\datename~\fi\@date\par}% Set date in \large size.
+\end{center}%\par
+\ifx\@thanks\@empty\else
+\par\vfil%
+\@thanks
+\fi%
+\null
+\end{titlepage}%
+\thispagestyle{empty}
+\setcounter{footnote}{0}%
+\let\thanks\relax\let\maketitle\relax%
+
+
+
+
+
+
+% copyright (or copyleft)
+%\ifx\@phd@rights\@empty\else
+%\vskip 4em
+%\par\vfil\noindent
+%\@phd@rights\\
+%\hrule
+%\fi%
+
+
+% address
+%\vfill
+%\def\and{\\}
+%\ifx\@phd@homepage\@empty\else
+%\noindent
+%\homepagename:
+%\begin{tabular}[t]{l}
+% \@phd@homepage%
+%\end{tabular}\\[2em]
+%\fi
+%\ifx\@phd@email\@empty\else
+%\noindent
+%\emailname:
+%\begin{tabular}[t]{l}
+% \@phd@email%
+%\end{tabular}\\[2em]
+%\fi
+%\ifx\@phd@phone\@empty\else
+%\noindent
+%\phonename:
+%\begin{tabular}[t]{l}
+% \@phd@phone%
+%\end{tabular}\\[2em]
+%\vfil
+%\fi%
+%\ifx\@phd@address\@empty\else
+% \par
+%\noindent
+%\addressname:\\[1em]
+%\@phd@address
+%\fi%
+%\vfill
+%\vfill
+}% end \maketitle
+
+
+%%% Adds captions used by maketitle
+\addto\phd@captions@italian{%
+\def\addressname{Indirizzo dell'autore}%
+\def\emailname{Posta elettronica dell'autore}%
+\def\homepagename{Pagina Web dell'autore}%
+\def\phonename{Numero telefonico dell'autore}%
+\def\thesisname{Tesi di Dottorato}%
+}
+\addto\phd@captions@american{%
+\def\addressname{Author's address}%
+\def\emailname{Author's e-mail}%
+\def\homepagename{Author's Web Page}%
+\def\phonename{Author's telephone number}%
+\def\thesisname{Ph.D.~Thesis}%
+}
+\let\phd@captions@english\phd@captions@american
+\endinput
+%%
+%% End of file `PisaPhdThesis.sdf'.
