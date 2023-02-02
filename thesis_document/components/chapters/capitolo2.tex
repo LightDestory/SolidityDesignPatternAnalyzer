@@ -2,7 +2,7 @@
 L'applicativo software sviluppato per automatizzare il processo di analisi statica del codice sorgente di uno smart-contract, scritto in Solidity, legge il codice sorgente, fornito in input, rileva l'utilizzo di specifici design pattern e infine fornisce, in output, le informazioni ottenute all'utente finale.\par
 Per lo sviluppo di tale applicativo si è fatto affidamento a numerose tecnologie.
 
-\section{Python}
+{\section{Python}
 
 \begin{wrapfigure}{r}{0.20\textwidth}
 	\centering
@@ -14,4 +14,61 @@ Uno dei punti di forza di Python è la sua estesa libreria standard, che include
 In sintesi, Python è un linguaggio di programmazione estremamente potente e versatile che rende facile sviluppare software in molti ambiti diversi. La sua sintassi semplice e intuitiva, la vasta libreria standard e la forte comunità di sviluppatori lo rendono una scelta popolare per molti programmatori.
 
 \subsection{Python-Solidity-Parser}
-Alla base della tecnica di analisi statica vi è una componente software denominata \textit{parser}. 
+Alla base della tecnica di analisi statica vi è una componente software denominata \textit{"parser"}. Un parser analizza un input, spesso una stringa o un file testuale, e lo trasforma in una struttura dati più significativa, come un albero sintattico.\par
+La struttura dati prodotta da un parser può essere facilmente manipolata o elaborata da altre componenti software, le quali potranno effettuare un'analisi semantica dei dati e pendere decisioni basandosi su di essa.\\ \newline
+Il processo di parsing consiste di solito di diverse fasi, tra cui:
+\begin{itemize}
+	\item \textit{Analisi lessicale}: in cui si analizza l'input carattere per carattere e lo divide in token, ovvero unità più piccole e significative;
+	\item \textit{Analisi sintattica}: in cui si analizza la sequenza di token generata dalla fase di analisi lessicale e si verifica che seguano la grammatica, spesso generata con ANTLR\cite{ANTLR}, del linguaggio di input. Se viene rilevato un errore sintattico, il parser solitamente lo segnala e interrompe il processo di parsing;
+	\item \textit{Costruzione dell'albero sintattico}: in cui si costruisce un albero sintattico, una struttura dati che rappresenta la struttura sintattica dell'input;
+\end{itemize}
+Per quanto riguarda Solidity e Python, esiste un parser sperimentale open-source sviluppato in Python denominato \textit{"python-solidity-parser"}\cite{python-solidity-parser}. Non offre tutte le funzionalità tipiche di un parser e risulta parecchio acerbo, ma rappresenta una componente fondamentale per lo sviluppo dell'applicativo della tesi.
+}
+{\section{JSON}
+	
+	\begin{wrapfigure}{l}{0.20\textwidth}
+		\centering
+		\includegraphics[scale=0.09]{json-logo}
+	\end{wrapfigure}
+	JSON (\textit{JavaScript Object Notation}) è un formato di testo semplice e leggero per lo scambio di dati tra sistemi informatici. JSON è stato progettato per essere facile da leggere e scrivere sia per le macchine sia per gli esseri umani, può essere facilmente manipolato ed elaborato da molti linguaggi di programmazione come Python, Java, JavaScript e molti altri. Per questo motivo è diventato uno dei formati di dati più diffusi per l'integrazione tra applicazioni e il trasporto di dati tramite internet. \par
+	I dati sono rappresentati come coppie chiave-valore, dove la chiave è una stringa e il valore può essere una stringa, un numero, un booleano, un array o un altro oggetto JSON. Gli oggetti JSON sono delimitati da parentesi graffe "\{\}" e i membri dell'oggetto sono separati da virgole. Gli array JSON, invece, sono delimitati da parentesi quadre "[]" e i membri dell'array sono separati da virgole.
+	
+	{\begin{lstlisting}[language=json, caption={Esempio di oggetto JSON}]
+{
+	"nome": "Mario",
+	"cognome": "Rossi",
+	"eta": 30,
+	"genere": "M",
+	"indirizzo": {
+		"via": "Via Roma",
+		"citta": "Roma",
+		"paese": "Italia"
+	},
+	"interessi": ["cinema", "sport", "lettura"]
+}\end{lstlisting}}
+	
+	\subsection{JSON Schema Draft-07}
+	JSON Schema\cite{JSON-Schema} è un linguaggio formale per descrivere la struttura di un documento JSON. Permette di definire un modello di dati, un insieme di regole e restrizioni, con cui convalidare una struttura dati JSON e verificare che sia ben formattata, al fine di prevenire errori e garantire la qualità dei dati. Tramite un modello di dati si potrebbe richiedere la presenza obbligatoria di determinati campi, la lunghezza minima o massima di una stringa, o il tipo di dati che un determinato campo può contenere.\par
+	Il draft-07\cite{JSON-Schema-Draft-07} è la settima specifica del formato JSON Schema, viene utilizzata questa versione poiché la libreria di validazione per Python ha un supporto parziale per le versioni successive.
+{\begin{lstlisting}[language=json, caption={Esempio di modello di dati JSON-Schema}]
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "object",
+	"properties": {
+		"nome": {
+			"type": "string"
+		},
+		
+		"cognome": {
+			"type": "string"
+		},
+		"eta": {
+			"type": "integer"
+		},
+		"genere": {
+			"type": "string"
+		},	
+	},
+	"required": ["nome", "cognome", "eta"]
+}\end{lstlisting}}
+}
