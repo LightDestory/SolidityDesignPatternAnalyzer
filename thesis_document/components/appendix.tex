@@ -1,28 +1,454 @@
 \appendix
 \chapter{Appendice}
-\section{Codice di riferimento per Ownership}\label{appendix:ownership}
-{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Ownership}]
+\setcounter{secnumdepth}{0}
+{\section{Codice di riferimento degli Authorization Design Pattern}
+
+{\label{appendix:access_restriction}
+	\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Access Restriction}]
+contract AccessRestriction {
+	uint256 public creationTime = block.timestamp;
+	modifier onlyBefore(uint256 _time) {
+		require(block.timestamp < _time);
+		_;
+	}
+	modifier minAmount(uint256 _amount) {
+		require(msg.value >= _amount);
+		_;
+	}
+	function test() public payable onlyBefore(creationTime + 10 seconds) minAmount(1 ether) {
+		// Do something
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:ownership}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Ownership}]
 contract Ownable {
 	address private _owner;
-	event OwnershipTransferred(address indexed previousOwner,address indexed newOwner);
-			
-			constructor() {
-				_owner = msg.sender;
-				emit OwnershipTransferred(address(0), _owner); }
-			
-			modifier onlyOwner() {
-				require(_owner == msg.sender, "Ownable: caller is not the owner");
-				_; }
-			
-			function renounceOwnership() public virtual onlyOwner {
-				emit OwnershipTransferred(_owner, address(0));
-				_owner = address(0); }
-			
-			function transferOwnership(address newOwner) public virtual onlyOwner {
-				require(
-				newOwner != address(0),
-				"Ownable: new owner is the zero address"
-				);
-				emit OwnershipTransferred(_owner, newOwner);
-				_owner = newOwner; }
-}\end{lstlisting}}
+	event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+	constructor() {
+		_owner = msg.sender;
+		emit OwnershipTransferred(address(0), _owner);
+	}
+	modifier onlyOwner() {
+		require(_owner == msg.sender, "Ownable: caller is not the owner");
+		_;
+	}
+}
+\end{lstlisting}}
+}
+\newpage
+{\section{Codice di riferimento dei Behavioral Design Pattern}
+
+{\label{appendix:commit_and_reveal}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Commit and Reveal}]
+contract CommitReveal {
+	struct Commit {string choice; string secret; string status;}
+	mapping(address => mapping(bytes32 => Commit)) public userCommits;
+	event LogCommit(bytes32, address);
+	event LogReveal(bytes32, address, string, string);
+	function commit(bytes32 _commit) public returns (bool success) {
+		Commit storage userCommit = userCommits[msg.sender][_commit];
+		if (bytes(userCommit.status).length != 0)
+			return false;
+		userCommit.status = "c";
+		emit LogCommit(_commit, msg.sender);
+		return true;
+	}
+	function reveal(string calldata _choice, string calldata _secret, bytes32 _commit) public returns (bool success) {
+		Commit storage userCommit = userCommits[msg.sender][_commit];
+		bytes memory bytesStatus = bytes(userCommit.status);
+		if (bytesStatus.length == 0)
+			return false;
+		else if (bytesStatus[0] == "r")
+			return false;
+		if (_commit != keccak256(abi.encodePacked(_choice, _secret)))
+			return false; 
+		userCommit.choice = _choice;
+		userCommit.secret = _secret;
+		userCommit.status = "r";
+		emit LogReveal(_commit, msg.sender, _choice, _secret);
+		return true;
+	}
+	function traceCommit(address _address, bytes32 _commit) public view
+	returns (string memory choice, string memory secret, string memory status) {
+		Commit storage userCommit = userCommits[_address][_commit];
+		require(bytes(userCommit.status)[0] == "r");
+		return (userCommit.choice, userCommit.secret, userCommit.status);
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:guardcheck}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per GuardCheck}]
+contract GuardCheck {
+	function donate(address addr) payable public {
+		require(addr != address(0));
+		require(msg.value != 0);
+		uint balanceBeforeTransfer = address(this).balance;
+		uint transferAmount;
+		if (addr.balance == 0) {
+			transferAmount = msg.value;
+		} else if (addr.balance < msg.sender.balance) {
+			transferAmount = msg.value / 2;
+		} else {
+			revert();
+		}
+		payable(addr).transfer(transferAmount);
+		assert(address(this).balance == balanceBeforeTransfer - transferAmount);      
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:oracle}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Oracle}]
+contract Oracle {
+	address knownSource = address(0x1234);
+	struct Request {
+		bytes data;
+		function(bytes memory) external callback;
+	}
+	Request[] requests;
+	event NewRequest(uint256);
+	modifier onlyBy(address account) {
+		require(msg.sender == account);
+		_;
+	}
+	function query(bytes memory data, function(bytes memory) external callback) public
+	{
+		requests.push(Request(data, callback));
+		emit NewRequest(requests.length - 1);
+	}
+	function reply(uint256 requestID, bytes memory response) public onlyBy(knownSource)
+	{
+		requests[requestID].callback(response);
+	}
+}
+contract OracleConsumer {
+	Oracle oracle = Oracle(address(0x4321));
+	modifier onlyBy(address account) { 
+		require(msg.sender == account);  _; 
+	}
+	function updateExchangeRate() public {
+		oracle.query("USD", this.oracleResponse);
+	}
+	function oracleResponse(bytes memory response) public onlyBy(address(oracle)) {
+		// do something with response
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:pull_over_push}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Pull Over Push}]
+contract Auction {
+	address public highestBidder;
+	uint highestBid;
+	mapping(address => uint) refunds;
+	function bid() public payable {
+		require(msg.value >= highestBid);
+		if (highestBidder != address(0)) {
+			refunds[highestBidder] += highestBid; 
+		}
+		highestBidder = msg.sender;
+		highestBid = msg.value;
+	}
+	function withdrawRefund() public {
+		uint refund = refunds[msg.sender];
+		refunds[msg.sender] = 0;
+		payable(msg.sender).transfer(refund);
+	}
+}
+\end{lstlisting}}
+
+\newpage
+
+{\label{appendix:randomness}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Randomness}]
+contract SimpleRandom {
+	function simpleRandomNumber() internal view returns (uint) {
+		return uint(blockhash(block.number - 1));
+	}
+	function seededRandomNumber(string calldata seed) internal view returns (uint) {
+		return uint(keccak256(abi.encodePacked(blockhash(block.number-1), seed)));
+	}
+	function random() public view returns (uint) {
+		return uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, block.difficulty)));
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:state_machine}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per State Machine}]
+contract DepositLock {
+	enum Stages {
+		AcceptingDeposits,
+		FreezingDeposits,
+		ReleasingDeposits
+	}
+	Stages public stage = Stages.AcceptingDeposits;
+	uint256 public creationTime = block.timestamp;
+	mapping(address => uint256) balances;
+	
+	modifier atStage(Stages _stage) {
+		require(stage == _stage);
+		_;
+	}
+	modifier timedTransitions() {
+		if (stage == Stages.AcceptingDeposits && block.timestamp >= creationTime + 1 days) nextStage();
+		if (stage == Stages.FreezingDeposits && block.timestamp >= creationTime + 8 days) nextStage();
+		_;
+	}
+	function nextStage() internal {
+		stage = Stages(uint256(stage) + 1);
+	}
+	function deposit() public payable timedTransitions atStage(Stages.AcceptingDeposits) {
+		balances[msg.sender] += msg.value;
+	}
+	
+	function withdraw() public timedTransitions atStage(Stages.ReleasingDeposits) {
+		uint256 amount = balances[msg.sender];
+		balances[msg.sender] = 0;
+		payable(msg.sender).transfer(amount);
+	}
+}
+\end{lstlisting}}}
+\newpage
+{\section{Codice di riferimento dei Gas Economic Design Pattern}
+
+{\label{appendix:memory_array_building}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Memory Array Building}]
+contract MemoryArrayBuilding {
+	struct Item {
+		string name;
+		string category;
+		address owner;
+		uint32 zipcode;
+		uint32 price;
+	}
+	Item[] public items;
+	mapping(address => uint) public ownerItemCount;
+	function getItemIDsByOwner(address _owner) public view returns (uint[] memory) {
+		uint[] memory result = new uint[](ownerItemCount[_owner]);
+		uint counter = 0;
+		for (uint i = 0; i < items.length; i++) {
+			if (items[i].owner == _owner) {
+				result[counter] = i;
+				counter++;
+			}
+		}
+		return result;
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:string_equality_comparison}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per String Equality Comparison}]
+contract SimpleContractExample {
+	function hashCompareCheck(string memory _a, string memory _b) internal pure returns (bool) {
+		return
+		keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
+	}
+	function hashCompareWithLengthCheck(string memory _a, string memory _b) internal pure returns (bool) {
+		if (bytes(_a).length != bytes(_b).length) {
+			return false;
+		} else {
+			return keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
+		}
+	}
+}
+\end{lstlisting}}
+\newpage
+{\label{appendix:tight_variable_packing}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Tight Variable Packing}]
+contract StructPackingExample {
+	struct CheapStruct {
+		uint8 a;
+		uint8 b;
+		uint8 c;
+		uint8 d;
+		bytes1 e;
+		bytes1 f;
+		bytes1 g;
+		bytes1 h;
+	}
+	CheapStruct example;
+	function addCheapStruct() public {
+		CheapStruct memory someStruct = CheapStruct(1,2,3,4,"a","b","c","d");
+		example = someStruct;
+	}
+}
+\end{lstlisting}}}
+{\section{Codice di riferimento dei Lifecycle Design Pattern}
+
+{\label{appendix:auto_deprecation}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Auto Deprecation}]
+contract Deprecatable {
+	uint expires;
+	constructor(uint _lifetime) { 
+		expires = block.timestamp + _lifetime;
+	}
+	function expired() public view returns (bool) { 
+		return block.timestamp > expires ? true : false;
+	}
+	modifier willDeprecate() { 
+		if (!expired()) {_;}
+	}
+	modifier whenDeprecated() { 
+		if (expired()) {_;}
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:mortal}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Mortal}]
+contract Mortal is Ownable {
+	function destroy() public onlyOwner { 
+		selfdestruct(payable(_owner)); 
+	}
+	function destroyWithoutModifier() public {
+		if (msg.sender == owner())
+		selfdestruct(payable(_owner)); 
+	}
+}
+\end{lstlisting}}}
+{\section{Codice di riferimento dei Maintenance Design Pattern}
+
+{\label{appendix:data_segregation}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Data Segregation}]
+contract Storage {
+	mapping(bytes32 => uint256) public uintStorage;
+	mapping(bytes32 => address) public addressStorage;
+	function setUintStorage(bytes32 key, uint256 value) public {
+		uintStorage[key] = value;
+	}
+	function setaddressStorage(bytes32 key, address value) public {
+		addressStorage[key] = value;
+	}
+}
+contract Logic {
+	Storage _storage;
+	constructor(address storageAddress) {
+		_storage = Storage(storageAddress);
+	}
+	function test() public returns (uint256) {
+		bytes32 key = keccak256("capybara");
+		_storage.setUintStorage(key, 911);
+		return _storage.uintStorage(key);
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:register}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Register}]
+contract Register is Ownable {
+	address public currentVersion;
+	address[] previousVersions;
+	function updateContract(address newVersion) public onlyOwner returns (bool) {
+		if (newVersion != currentVersion) {
+			previousVersions.push(currentVersion);
+			currentVersion = newVersion;
+			return true;
+		}
+		return false;
+	}
+	fallback() external {
+		(bool success, ) = currentVersion.delegatecall(msg.data);
+		require(success);
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:relay}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Relay}]
+contract Relay is Ownable {
+	address public currentVersion;
+	constructor(address initAddr) { currentVersion = initAddr; }
+	function updateContract(address newVersion) public onlyOwner {
+		currentVersion = newVersion;
+	}
+	fallback() external {
+		(bool success, ) = currentVersion.delegatecall(msg.data);
+		require(success);
+	}
+}
+\end{lstlisting}}
+}
+{\section{Codice di riferimento dei Security Design Pattern}
+
+{\label{appendix:balance_limit}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Balance Limit}]
+contract BalanceLimit {
+	uint256 limit;
+	constructor(uint256 _value) {
+		limit = _value;
+	}
+	modifier limitedPayable() {
+		require(address(this).balance <= limit);
+		_;
+	}
+	function deposit() public payable limitedPayable {
+		// TO-DO Something
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:check_effects_interactions}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Check Effects Interactions}]
+contract ChecksEffectsInteractions {
+	mapping(address => uint256) balances;
+	function deposit() public payable {
+		balances[msg.sender] = msg.value;
+	}
+	function withdraw(uint256 amount) public {
+		require(balances[msg.sender] >= amount);
+		balances[msg.sender] -= amount;
+		payable(msg.sender).transfer(amount);
+	}
+}
+\end{lstlisting}}
+
+\label{appendix:emergency_stop}{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Emergency Stop}]
+contract EmergencyStop is Ownable {
+	bool private contractStopped = false;
+	modifier haltInEmergency() {
+		if (!contractStopped) _;
+	}
+	modifier enableInEmergency() {
+		if (contractStopped) _;
+	}
+	function toggleContractStopped() public onlyOwner {
+		contractStopped = !contractStopped;
+	}
+	function deposit() public payable haltInEmergency {
+		// some code
+	}
+	function withdraw() public view enableInEmergency {
+		// some code
+	}
+}
+\end{lstlisting}}
+\newpage
+{\label{appendix:mutex}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Mutex}]
+contract Mutex {
+	bool locked = false;
+	modifier noReentrancy() {
+		require(!locked);
+		locked = true;
+		_;
+		locked = false;
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:rate_limit}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Rate Limit}]
+contract RateLimiter {
+	uint256 executions;
+	uint256 enableEvery;
+	uint256 nextReset;
+	constructor(uint256 _resetInterval) {
+		executions = 0;
+		enableEvery = _resetInterval;
+		nextReset = block.timestamp + _resetInterval;
+	}
+	function reset() private {
+		executions = 0;
+		nextReset = block.timestamp + enableEvery;
+	}
+	modifier rateLimited(uint256 maxExecutions) {
+		if (executions++ < maxExecutions) _;
+		if (block.timestamp >= nextReset) reset();
+	}
+}
+\end{lstlisting}}
+
+{\label{appendix:rejector}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Rejector}]
+contract Rejector {
+	fallback() external {
+		revert();
+	}
+}
+\end{lstlisting}}
+}
