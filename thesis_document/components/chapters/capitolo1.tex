@@ -9,13 +9,12 @@ Di seguito in questo capitolo vengono presentati i concetti fondamentali del Web
 
 \section{Le blockchain}
 Le blockchain sono una tecnologia di registro digitale distribuito che consente la creazione di una \textit{rete peer-to-peer} senza la necessità di intermediari. Ciò significa che le informazioni possono essere scambiate direttamente tra gli utenti senza la necessità di un'autorità centrale.
-Una blockchain è formata da una serie di blocchi, ognuno dei quali contiene una serie di transazioni. Tali blocchi vengono inseriti in catena in modo cronologico attraverso il consenso degli altri peer, creando di fatto un registro:
+Una blockchain è formata da una serie di blocchi, ognuno dei quali contiene delle transazioni. Tali blocchi vengono inseriti cronologicamente in catena attraverso il consenso degli altri peer, creando di fatto un registro:
 
 \begin{itemize}
 	\item \textit{condiviso}: poiché viene replicato in ogni nodo della rete;
 	\item \textit{immutabile}: in quanto una volta inserito un blocco, quest'ultimo non potrà essere eliminato o modificato;
 \end{itemize}
-
 Queste caratteristiche rendono le blockchain adatte per la creazione di un Internet decentralizzato in cui gli utenti hanno maggiore sicurezza, trasparenza e autonomia.
 
 \subsection{La blockchain Ethereum}
@@ -25,7 +24,7 @@ Queste caratteristiche rendono le blockchain adatte per la creazione di un Inter
 	\includegraphics[scale=0.03]{ethereum-logo}
 \end{wrapfigure}
 
-Ethereum\cite{ethereum} è una blockchain open-source, lanciata nel 2015 da Vitalik Buterin e altri sviluppatori, velocemente diventata una delle più grandi e utilizzate blockchain al mondo. Rispetto alla blockchain Bitcoin, una delle differenze chiave consiste nel fatto che Ethereum è programmabile, ovvero offre agli sviluppatori una piattaforma per la creazione e l'esecuzione di smart-contract, con i quali è possibile creare applicazioni decentralizzate, denominate \textit{dApp}, utilizzabili per diversi scopi, come la gestione di beni digitali e la creazione di mercati decentralizzati. Ethereum ha la propria criptovaluta, denominata \textit{"Ether"}, usata per pagare per certe attività sulla rete di Ethereum.
+Ethereum\cite{ethereum} è una blockchain open-source, lanciata nel 2015 da Vitalik Buterin e altri sviluppatori, velocemente diventata una delle più grandi e utilizzate blockchain al mondo. Rispetto alla blockchain Bitcoin, una delle differenze chiave consiste nel fatto che Ethereum è programmabile, ovvero offre agli sviluppatori una piattaforma per la creazione e l'esecuzione di smart-contract, con i quali è possibile creare applicazioni decentralizzate, denominate \textit{dApp}, utilizzabili per diversi scopi, come la gestione di beni digitali e la creazione di mercati decentralizzati. Ethereum ha una propria criptovaluta, denominata \textit{"Ether"}, usata per pagare per certe attività sulla rete di Ethereum.
 
 \section{Gli Smart-Contract}
 
@@ -34,22 +33,22 @@ Ethereum\cite{ethereum} è una blockchain open-source, lanciata nel 2015 da Vita
 	\includegraphics[scale=0.1]{solidity-logo}
 \end{wrapfigure}
 
-Ethereum permette la creazione e la gestione di smart-contract, una forma di contratto digitale automatizzato che si esegue automaticamente, all'interno della rete, quando determinate condizioni sono soddisfatte. Gli smart-contract consentono la creazione di accordi automatici tra le parti in modo da ridurre i tempi di elaborazione e i costi associati alle transazioni tradizionali. Questi contratti intelligenti sono scritti da un programmatore in un linguaggio di programmazione denominato \textit{"Solidity"}\cite{solidity} che consente la definizione di regole e logiche specifiche che vengono eseguite su una blockchain. Come in ogni sviluppo software, durante lo sviluppo di uno smart-contract si può incorrere in vulnerabilità e problemi di sicurezza, che permetterebbero a un attaccante di compromettere il contratto e causare danni ingenti e irreparabili. Per tale motivo, con il passare del tempo, i programmatori hanno ideato delle soluzioni ai problemi noti, definendo di fatto dei design pattern specifici per smart-contract.
+Ethereum permette la creazione e la gestione di smart-contract, una forma di contratto digitale automatizzato che si esegue automaticamente, all'interno della rete, quando determinate condizioni sono soddisfatte. Gli smart-contract consentono la creazione di accordi automatici tra le parti in modo da ridurre i tempi di elaborazione e i costi associati alle transazioni tradizionali. Questi contratti intelligenti sono scritti da un programmatore in un linguaggio di programmazione denominato \textit{"Solidity"}\cite{solidity} che consente la definizione di regole e logiche specifiche che vengono eseguite in una blockchain. Come in ogni sviluppo software, durante lo sviluppo di uno smart-contract si può incorrere in vulnerabilità e problemi di sicurezza, che permetterebbero a un attaccante di compromettere il contratto e causare danni ingenti e irreparabili. Per tale motivo, con il passare del tempo, i programmatori hanno ideato delle soluzioni ai problemi noti, definendo di fatto dei design pattern specifici per smart-contract.
 
 \section{Il tema e lo sviluppo della Tesi}
 Usando come riferimento la relativa pubblicazione scientifica e i consigli della comunità di programmatori Solidity, disponibili al momento della stesura di questa tesi, si prefigge l'obiettivo di studiare, analizzare e documentare quali \textit{design pattern} siano attualmente utilizzati nello sviluppo degli smart-contract della blockchain Ethereum.
 
 L'obiettivo fissato si fonda sulla tecnica di \textit{analisi statica} (nota anche come \textit{"static analysis"} o \textit{"code analysis"}), una tecnica che si occupa di esaminare il codice sorgente di un software senza eseguirlo effettivamente, con lo scopo di identificare eventuali vulnerabilità, bug, inefficienze o altri problemi di qualità del codice. 
 
-Al fine di conseguire l'obiettivo, si propone lo sviluppo di un applicativo software capace di eseguire automaticamente l'analisi statica su un codice sorgente, scritto in Solidity, di uno smart-contract fornito in input, rilevare quali design pattern siano utilizzati e restituire in output tali informazioni all'utente finale. 
+Al fine di conseguire l'obiettivo, si propone lo sviluppo di un applicativo software capace di eseguire automaticamente l'analisi statica sul codice sorgente di uno smart-contract, scritto in Solidity, fornito in input, rilevare quali design pattern siano utilizzati e restituire in output tali informazioni all'utente finale. 
 
 
-\section{Struttura Tesi}
+\section{Struttura della Tesi}
 Di seguito vengono illustrati gli argomenti trattati in ogni capitolo presente:
 \begin{itemize}
 	\item Nel \textit{capitolo 2} vengono introdotti gli strumenti utilizzati per lo svolgimento del tema della tesi;
 	\item Nel \textit{capitolo 3} vengono descritti i design pattern individuati nello studio dell'attuale divulgazione scientifica;
 	\item Nel \textit{capitolo 4} viene presentato il software di analisi statica automatica sviluppato;
-	\item Nel \textit{capitolo 5} vengono riportati i risultati dell'analisi automatica di alcuni smart-contract open-source;
+	\item Nel \textit{capitolo 5} vengono riportati i risultati;
 	\item Nell'\textit{appendice} vengono riportati i codici di riferimento dei design pattern usati per lo sviluppo del software;
 \end{itemize}

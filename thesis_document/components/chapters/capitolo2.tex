@@ -1,2 +1,17 @@
 \chapter{Strumenti Utilizzati}
-I design pattern adottati nello sviluppo di smart-contract possono essere classificati in diversi tipi\cite[alcuni tipi]{9089272}\cite{9050163}, ognuno dei quali caratterizza un aspetto specifico della lifecycle del contratto:
+L'applicativo software sviluppato per automatizzare il processo di analisi statica del codice sorgente di uno smart-contract, scritto in Solidity, legge il codice sorgente, fornito in input, rileva l'utilizzo di specifici design pattern e infine fornisce, in output, le informazioni ottenute all'utente finale.\par
+Per lo sviluppo di tale applicativo si è fatto affidamento a numerose tecnologie.
+
+\section{Python}
+
+\begin{wrapfigure}{r}{0.20\textwidth}
+	\centering
+	\includegraphics[scale=0.1]{python-logo}
+\end{wrapfigure}
+Python\cite{python} è un linguaggio di programmazione ad alto livello con una sintassi semplice e intuitiva. È un linguaggio interpretato con tipizzazione dinamica debole, ovvero la tipizzazione delle variabili avviene durante l'esecuzione del codice. Questo rende Python molto flessibile e facile da utilizzare.\par
+Lo sviluppo di Python ha avuto inizio negli anni '90 da Guido van Rossum e si è rapidamente affermato come uno dei linguaggi di programmazione più popolari, grazie sopratutto alla sua versatilità in svariate campi, tra cui web development, sviluppo di software scientifico, automazione, machine learning, statistica e molto altro ancora.\par
+Uno dei punti di forza di Python è la sua estesa libreria standard, che include molte funzioni già implementate per molte attività comuni, come l'elaborazione di stringhe, la gestione dei file, la connessione a database, il parsing di XML e JSON. Ad affiancare la libreria standard ci sono anche numerosi sviluppatori che hanno creato molti framework e librerie esterne per molte applicazioni specifiche.\par
+In sintesi, Python è un linguaggio di programmazione estremamente potente e versatile che rende facile sviluppare software in molti ambiti diversi. La sua sintassi semplice e intuitiva, la vasta libreria standard e la forte comunità di sviluppatori lo rendono una scelta popolare per molti programmatori.
+
+\subsection{Python-Solidity-Parser}
+Alla base della tecnica di analisi statica vi è una componente software denominata \textit{parser}. 
