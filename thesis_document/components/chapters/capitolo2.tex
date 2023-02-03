@@ -1,6 +1,6 @@
 \chapter{Strumenti Utilizzati}
 L'applicativo software sviluppato per automatizzare il processo di analisi statica del codice sorgente di uno smart-contract, scritto in Solidity, legge il codice sorgente, fornito in input, rileva l'utilizzo di specifici design pattern e infine fornisce, in output, le informazioni ottenute all'utente finale.\par
-Per lo sviluppo di tale applicativo si è fatto affidamento a numerose tecnologie.
+Per lo sviluppo di tale applicativo si è fatto affidamento a svariate tecnologie e librerie esterne.
 
 {\section{Python}
 
@@ -30,7 +30,7 @@ Per quanto riguarda Solidity e Python, esiste un parser sperimentale open-source
 		\centering
 		\includegraphics[scale=0.09]{json-logo}
 	\end{wrapfigure}
-	JSON (\textit{JavaScript Object Notation}) è un formato di testo semplice e leggero per lo scambio di dati tra sistemi informatici. JSON è stato progettato per essere facile da leggere e scrivere sia per le macchine sia per gli esseri umani, può essere facilmente manipolato ed elaborato da molti linguaggi di programmazione come Python, Java, JavaScript e molti altri. Per questo motivo è diventato uno dei formati di dati più diffusi per l'integrazione tra applicazioni e il trasporto di dati tramite internet. \par
+	JSON, acronimo di \textit{"JavaScript Object Notation"}, è un formato di testo semplice e leggero per lo scambio di dati tra sistemi informatici. JSON è stato progettato per essere facile da leggere e scrivere sia per le macchine sia per gli esseri umani, può essere facilmente manipolato ed elaborato da molti linguaggi di programmazione come Python, Java, JavaScript e molti altri. Per questo motivo è diventato uno dei formati di dati più diffusi per l'integrazione tra applicazioni e il trasporto di dati tramite internet. \par
 	I dati sono rappresentati come coppie chiave-valore, dove la chiave è una stringa e il valore può essere una stringa, un numero, un booleano, un array o un altro oggetto JSON. Gli oggetti JSON sono delimitati da parentesi graffe "\{\}" e i membri dell'oggetto sono separati da virgole. Gli array JSON, invece, sono delimitati da parentesi quadre "[]" e i membri dell'array sono separati da virgole.
 	
 	{\begin{lstlisting}[language=json, caption={Esempio di oggetto JSON}]
@@ -47,9 +47,9 @@ Per quanto riguarda Solidity e Python, esiste un parser sperimentale open-source
 	"interessi": ["cinema", "sport", "lettura"]
 }\end{lstlisting}}
 	
-	\subsection{JSON Schema Draft-07}
-	JSON Schema\cite{JSON-Schema} è un linguaggio formale per descrivere la struttura di un documento JSON. Permette di definire un modello di dati, un insieme di regole e restrizioni, con cui convalidare una struttura dati JSON e verificare che sia ben formattata, al fine di prevenire errori e garantire la qualità dei dati. Tramite un modello di dati si potrebbe richiedere la presenza obbligatoria di determinati campi, la lunghezza minima o massima di una stringa, o il tipo di dati che un determinato campo può contenere.\par
-	Il draft-07\cite{JSON-Schema-Draft-07} è la settima specifica del formato JSON Schema, viene utilizzata questa versione poiché la libreria di validazione per Python ha un supporto parziale per le versioni successive.
+	\subsection{JSON Schema e Draft-07}
+	JSON Schema\cite{JSON-Schema} è un linguaggio formale per descrivere la struttura di un documento JSON. Permette di definire un modello di dati, ovvero un insieme di regole e restrizioni, con cui convalidare una struttura dati JSON e verificare che sia ben formattata, al fine di prevenire errori e garantire la qualità dei dati. Tramite un modello di dati si potrebbe richiedere la presenza obbligatoria di determinati campi, la lunghezza minima o massima di una stringa, o il tipo di dati che un determinato campo può contenere.\par
+	Il \textit{draft-07}\cite{JSON-Schema-Draft-07} è la settima specifica del formato JSON Schema, viene utilizzata questa versione poiché la libreria di validazione per Python\cite{python-jsonschema} ha un supporto parziale per le versioni successive.
 {\begin{lstlisting}[language=json, caption={Esempio di modello di dati JSON-Schema}]
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
