@@ -27,7 +27,7 @@ Si individuano i seguenti design pattern: \textit{Access Restriction} e \textit{
 					\textbf{Problema} & {Qualsiasi utente può richiamare qualunque funzione definita con visibilità pubblica di un contratto, ma in certi scenari potrebbe essere necessario definire dei prerequisiti o condizioni ed eseguire la funzionalità richiesta solo al verificarsi di essi.} \\ \hline
 					\textbf{Soluzione} & {Definire una serie di \textit{modifier} di uso generale, che verifichino i prerequisiti desiderati, e applicarli nella definizione delle funzioni interessate.} \\ \hline
 					\textbf{Riconoscimento} & {Individuare,  all'interno del contratto, la definizione o utilizzo di \textit{modifier}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:access_restriction]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite{fravoll}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:access_restriction} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite{fravoll}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -49,7 +49,7 @@ Questo design pattern può essere considerato come un caso specifico di Access R
 				\textbf{Problema} & {Qualsiasi utente può richiamare qualunque funzione definita con visibilità pubblica di un contratto, ma in certi scenari potrebbe essere necessario riservare l'esecuzione di specifiche funzioni al solo proprietario.} \\ \hline
 				\textbf{Soluzione} & {Memorizzare in una variabile di stato del contratto l'indirizzo del proprietario e limitare l'esecuzione delle funzioni in base all'indirizzo del chiamante.} \\ \hline
 				\textbf{Riconoscimento} & {Individuare un confronto fra l'indirizzo del chiamante, contenuto in \textit{msg.sender}, e la variabile di stato contenente l'indirizzo del proprietario. Il confronto può essere eseguito attraverso un costrutto \textit{if-else}, \textit{modifier} o la funzione \textit\mbox{\textit{require()}}.} \\ \hline
-				\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:ownership]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite[Incluso in Access Restriction]{fravoll}} \\
+				\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:ownership} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite[Incluso in Access Restriction]{fravoll}} \\
 			\end{tabular}
 		};
 		\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -73,7 +73,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Essendo Ethereum una blockchain pubblica, tutti i dati e tutte le transazioni sono visibili pubblicamente. Si può facilmente immaginare uno scenario, come una scommessa basata sul gioco carta-forbici-sasso, in cui le interazioni con lo smart-contract, particolarmente i valori dei parametri inviati, debbano essere trattate in modo confidenziale.} \\ \hline
 					\textbf{Soluzione} & {Implementare uno \textit{schema di commitment}. Uno schema di commitment è un algoritmo crittografico utilizzato per consentire a qualcuno di impegnarsi su un valore tenendolo nascosto ad altri con la possibilità di rivelarlo in seguito. I valori in uno schema di commitment sono vincolanti, ovvero nessuno può cambiarli una volta impegnati. Lo schema prevede due fasi: una fase di \textit{commit}, in cui viene scelto e specificato un valore, e una fase di \textit{reveal}, in cui il valore viene rivelato e utilizzato.} \\ \hline
 					\textbf{Riconoscimento} & {Data la complessità e la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca di definizione e uso di funzioni denominate \textit{"commit"} e \textit{"reveal"} e sulla definizione degli eventi \textit{"LogCommit"} e \textit{"LogReveal"}. \textit{Si potrebbe affinare il riconoscimento tentanto di rilevare una struct di commit}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:commit_and_reveal]{Appendice} \newline Bibliografia: \cite{maxwoe}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:commit_and_reveal} \newline Bibliografia: \cite{maxwoe}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -99,7 +99,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\item \textit{revert()}: usato per ripristinare le modifiche apportate allo stato, viene automaticamente lanciato in caso di fallimento da \textit\mbox{require()} o \textit{assert()} ma potrebbe essere utilizzato all'interno di un controllo fatto da un costrutto \textit{if};
 					\end{itemize} \vspace{-6mm}}\\ \hline
 					\textbf{Riconoscimento} & {Individuare l'utilizzo di una delle eccezioni: \textit{assert(condition)}, \textit\mbox{require(condition)} o \textit{revert()}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:guardcheck]{Appendice} \newline Bibliografia: \cite{fravoll}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:guardcheck} \newline Bibliografia: \cite{fravoll}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -118,7 +118,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Si immagini uno scenario in cui lo smart-contract necessiti di informazioni presenti al di fuori della blockchain, come ad esempio l'attuale cambio di una specifica valuta.} \\ \hline
 					\textbf{Soluzione} & {Richiedere i dati esterni attraverso un servizio \textit{oracolo}, un mediatore collegato al mondo esterno che assume il ruolo di provider di dati.} \\ \hline
 					\textbf{Riconoscimento} & {Data la complessità e la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca di definizione e uso di funzioni denominate \textit{"query"} e \textit{"reply"} e sulla definizione di eventi relativi alle richieste. \textit{Si potrebbe affinare il riconoscimento tentanto di rilevare una struct di richieste}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:oracle]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite[Basato su Oraclize]{fravoll}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:oracle} \newline Bibliografia: \cite{maxwoe} \cite[Basato su Oraclize]{fravoll}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -139,7 +139,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {L'invio di \textit{ether} comporta una chiamata all'entità ricevente. Tale chiamata esterna potrebbe fallire per diversi motivi: per esempio se l'indirizzo ricevente è un contratto, potrebbe essere implementata una funzione di \textit{fallback()} che lancia semplicemente un'eccezione, una volta invocata. Un altro causa di fallimento potrebbe essere l'esaurimento del \textit{“gas”} contenuto nella transazione.} \\ \hline
 					\textbf{Soluzione} & {\textit{Mai non affidarsi al fatto che le chiamate esterne vengano eseguite senza lanciare un errore}: potremmo dire che è responsabilità del destinatario assicurarsi di essere in grado di ricevere il denaro. Per questo motivo la situazione ideale è far sì che sia il destinatario a innescare il trasferimento.} \\ \hline
 					\textbf{Riconoscimento} & {Individuare un trasferimento di \textit{ether} ad opera del destinatario, ovvero un'invocazione della funzione denominata \textit{"transfer"} del tipo: \textit{msg.sender.transfer(amount)}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:pull_over_push]{Appendice} \newline Bibliografia: \cite[SendingFunds]{maxwoe} \cite{fravoll}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:pull_over_push} \newline Bibliografia: \cite[SendingFunds]{maxwoe} \cite{fravoll}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -172,7 +172,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\item \textit{uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, block.difficulty)))}
 					\end{itemize}\vspace{-6mm}
 					} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:randomness]{Appendice} \newline Bibliografia: \cite{fravoll}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:randomness} \newline Bibliografia: \cite{fravoll}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -191,7 +191,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Si immagini uno scenario in cui un contratto passi da uno stato iniziale, e attraverso diversi stati intermedi, a uno stato finale. In ogni fase il contratto espone agli utenti un comportamento e delle funzionalità differenti. Il comportamento descritto può essere osservato in una moltitudine di casi d'uso: aste, gioco d'azzardo, crowdfunding, ect...} \\ \hline
 					\textbf{Soluzione} & {Implementare una macchina a stati per modellare e rappresentare le diverse fasi comportamentali del contratto e le loro transizioni.} \\ \hline
 					\textbf{Riconoscimento} & {Data la complessità e la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca di definizione e uso di un \textit{modifier} relativo agli stati e la definizione di un \textit{enum} di stati.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:state_machine]{Appendice} \newline Bibliografia: \cite{maxwoe}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:state_machine} \newline Bibliografia: \cite{maxwoe}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -218,7 +218,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Si immagini uno scenario in cui si voglia aggregare dati provenienti da diverse fonti, ciò richiederebbe una grande quantità di letture dallo storage e sarebbe, quindi, particolarmente costoso.} \\ \hline
 						\textbf{Soluzione} & {Sfruttare il modifier \textit{view} di Solidity, che consente di leggere e aggregare i dati dallo \textit{storage} del contratto senza alcun costo associato. Le funzioni dichiarate con il modifier \textit{view} non sono autorizzate a scrivere nello \textit{storage} e quindi non modificano lo stato della blockchain. Poiché lo stato della blockchain rimane invariato, non è necessario trasmettere una transazione nella rete. Nessuna transazione significa nessun consumo di gas, il che rende gratuita la chiamata della funzione, purché sia chiamata esternamente e non da un altro contratto. In tal caso, sarebbe necessaria una transazione e verrebbe consumato del gas. Una funzione con tali caratteristiche permette di eseguire un lettura da diverse fonti, aggregare e ritornare i dati in un array definito in \textit{memory}, anziché nello \textit{storage}.} \\ \hline
 						\textbf{Riconoscimento} & {Individuare la definizione di una funzione avente modifier \textit{view} che ritorni un array con locazione \textit{memory}.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:memory_array_building]{Appendice} \newline Bibliografia: \cite{fravoll} \cite[Limit Storage]{9050163}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:memory_array_building} \newline Bibliografia: \cite{fravoll} \cite[Limit Storage]{9050163}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -238,7 +238,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Si immagini uno scenario in cui è necessario confrontare due stringe.} \\ \hline
 						\textbf{Soluzione} & {Per effettuare l'uguaglianza, la soluzione proposta si basa sull'utilizzo di una funzione di hash, opzionalmente combinata con un controllo della lunghezza delle stringhe fornite, per eliminare fin dall'inizio le coppie con lunghezze differenti.} \\ \hline
 						\textbf{Riconoscimento} & {Individuare un uguaglianza fra due risultati della funzione \textit\mbox{keccak256()}.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:string_equality_comparison]{Appendice} \newline Bibliografia: \cite{fravoll}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:string_equality_comparison} \newline Bibliografia: \cite{fravoll}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -259,7 +259,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Memorizzare o leggere dati di dimensione inferiori a 32 byte può causare uno spreco di gas correlato all'esecuzione di operazioni di lettura e scrittura superflue su uno storage basato su slot di 32 byte.} \\ \hline
 					\textbf{Soluzione} & {Ordinare le dichiarazioni dei tipi di dimensione statica inferiore a 32Byte come \textit{bytes16} \textit{uint8}, e così via, in modo che l'EVM possa raggrupparli in un singolo slot da 32 byte.} \\ \hline
 					\textbf{Riconoscimento} & {Individuare la definizione di una \textit{struct} contenente tipi di dati la cui somma delle dimensioni sia minore o uguale, quando possibile, a 32 byte.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:tight_variable_packing]{Appendice} \newline Bibliografia: \cite{fravoll} \cite[Packing Variables]{9050163}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:tight_variable_packing} \newline Bibliografia: \cite{fravoll} \cite[Packing Variables]{9050163}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -284,7 +284,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Si immagini uno scenario d'uso come un evento a tempo, allo scadere di un quanto di tempo, lo smart-contract deve interrompere l'esecuzione della funzionalità relativa all'evento.} \\ \hline
 						\textbf{Soluzione} & {Definire un quanto di tempo e un modifier che controlli la scadenza, applicare il modifier nella definizione delle funzioni soggette a scadenza.} \\ \hline
 						\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca si definizione e uso di una funzione di controllo della scadenza denominata \textit{"expired()"} e dei modifier relativi.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:auto_deprecation]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:auto_deprecation} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -304,7 +304,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Generalmente, l'esistenza e l'esecuzione di un contratto sono legate all'esistenza della rete Ethereum stessa. Potrebbe, però, in certi casi, come la terminazione del servizio offerto, essere necessario terminare e distruggere il contratto.} \\ \hline
 						\textbf{Soluzione} & {Solidity mette a disposizione la funzione \textit{"selfdestruct(address)"} che termina il contratto che la esegue, non prima di aver trasferito il fondo monetario del contratto all'indirizzo fornito come parametro.} \\ \hline
 						\textbf{Riconoscimento} & {Individuare l'invocazione della funzione \textit{"selfdestruct(address)"}. Al fine di evidenziare tale funzione come fulcro del pattern design, l'elemento di autenticazione non viene considerato.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:mortal]{Appendice} \newline Bibliografia: \cite{maxwoe}} \cite{cjgdev} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:mortal} \newline Bibliografia: \cite{maxwoe}} \cite{cjgdev} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -329,7 +329,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {I dati e la logica di un contratto sono di solito mantenuti all'interno dello stesso smart-contract, il che porta a un accoppiamento stretto. Quando uno smart-contract viene aggiornato, i dati della versione precedente devono essere migrati alla nuova versione. Tale migrazione consiste in una serie di operazioni di lettura dallo storage della versione precedente seguita da altrettante operazioni di scrittura nello storage della nuova versione, il che rende la migrazione alquanto costosa.} \\ \hline
 						\textbf{Soluzione} & {Favorire il disaccoppiamento fra i dati e la logica del contratto creando di fatto due contratti separati. In genere il contratto dei dati viene denominato \textit{Storage} o \textit{Data Contract}.} \\ \hline
 						\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca della definizione di \textit{mapping} e i relativi \textit{getter} e \textit{setter}.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:data_segregation]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite[Eternal Storage]{fravoll} \cite[Data Contract]{9050163}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:data_segregation} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite[Eternal Storage]{fravoll} \cite[Data Contract]{9050163}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -351,7 +351,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Uno smart-contract può essere soggetto a correzione, miglioramento ed estensione delle funzionalità. Nella blockchain Ethereum, aggiornare uno smart-contract implica la pubblicazione di un nuovo contratto, a cui verrà assegnato un nuovo indirizzo. Nasce perciò la necessità di fare sempre interfacciare gli utenti con l'ultima versione disponibile, in totale trasparenza.} \\ \hline
 						\textbf{Soluzione} & {Presentare agli utenti un contratto che assume il ruolo di mediatore, che deleghi le chiamate ricevute al contratto che implementa l'ultima versione della logica operativa.} \\ \hline
 						\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questi design pattern si basa sulla ricerca dell'utilizzo della funzione \textit{delegateCall()}, messa a disposizione da Solidity.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:register]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite[Proxy Delegate]{fravoll} \cite[Proxy]{9050163}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:register} e \ref{appendix:relay} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite[Proxy Delegate]{fravoll} \cite[Proxy]{9050163}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -377,7 +377,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Il funzionamento di uno smart-contract può essere compromesso da bug nel codice o da problemi di sicurezza non ancora identificati. Un malfunzionamento del contratto può causare danni irreparabili all'utente, come ad esempio la perdita di denaro.} \\ \hline
 						\textbf{Soluzione} & {Definire un tetto massimo per il bilancio delle utenze, che il contratto può detenere.} \\ \hline
 						\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca di un confronto fra il bilancio di un indirizzo e un limite numerico.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:balance_limit]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{8327565}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:balance_limit} \newline Bibliografia: \cite{maxwoe} \cite{8327565}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -398,7 +398,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 						\textbf{Problema} & {Quando un contratto comunica con uno entità terza, ad esempio per trasferire ether, trasferisce il flusso di controllo a quest'ultima. Questa entità esterna diventa responsabile del flusso di controllo e, nel caso si tratti di un altro contratto, può eseguire qualsiasi codice inerente. Generalmente, questo meccanismo non causa alcun problema, ma nel caso in cui l'entità abbia scopi fraudolenti potrebbe alterare il flusso di controllo e restituirlo in uno stato inaspettato al contratto iniziale. Un possibile vettore d'attacco è la \textit{rientranza}, in cui una funzionalità viene nuovamente invocata prima ancora che la sua prima esecuzione, e quindi l'aggiornamento dello stato interno del contratto, venga completata.} \\ \hline
 						\textbf{Soluzione} & {Identificate le funzioni che eseguono chiamate a entità terze, per cui l'incertezza relativa al flusso di controllo è la potenziale causa di vulnerabilità, è possibile agire come segue: aggiornare lo stato interno del contratto prima di eseguire la chiamata all'entità esterna.} \\ \hline
 						\textbf{Riconoscimento} & {Individuare l'invocazione delle funzioni che esterne offerte da Solidity, ovvero l'utilizzo delle funzioni \textit{call()}, \textit{send()} e \textit{transfer()}, precedute da un'istruzione di assegnamento.} \\ \hline
-						\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:check_effects_interactions]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{fravoll} \cite{8327565}} \\
+						\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:check_effects_interactions} \newline Bibliografia: \cite{maxwoe} \cite{fravoll} \cite{8327565}} \\
 					\end{tabular}
 				};
 				\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -418,7 +418,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Si immagini uno scenario in cui si voglia disabilitare l'esecuzione di qualche funzionalità del contratto.} \\ \hline
 					\textbf{Soluzione} & {Definire e utilizzare una variabile di stato booleana come interruttore software. Si può implementare un controllo di tale variabile tramite un modifier oppure direttamente all'interno delle funzioni interessate tramite un costrutto \textit{if-else}.} \\ \hline
 					\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca di un'istruzione di flip di una variabile di stato booleana e la definizione e utilizzo di un modifier denominato in modo particolare, come ad esempio \textit{"haltInEmergency"}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:emergency_stop]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite[Circuit Breaker]{cjgdev} \cite{fravoll} \cite{8327565}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:emergency_stop} \newline Bibliografia: \cite{maxwoe} \cite[Circuit Breaker]{cjgdev} \cite{fravoll} \cite{8327565}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -438,7 +438,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Si immagini una funzione di prelievo che, durante il passaggio del flusso di controllo dovuto al trasferimento di ether, viene invocata nuovamente dall'utente. La seconda esecuzione opererà su uno stato obsoleto poiché la prima esecuzione, e quindi l'aggiornamento dello stato interno, non è ancora ultimata.} \\ \hline
 					\textbf{Soluzione} & {Implementare un semaforo con mutua esclusione attraverso il concetto di \textit{function modifiers} di Solidity.} \\ \hline
 					\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca della definizione e utilizzo di un modifier denominato in modo particolare, come ad esempio \textit\mbox{"NoReentrancy"}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:mutex]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev}, \cite{8327565}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:mutex} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev}, \cite{8327565}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -457,7 +457,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Una rapida e massiccia successione di richieste di una particolare funzionalità possono influenzare le prestazioni del contratto, causando ad esempio tempi di elaborazione e di risposta più lunghi.} \\ \hline
 					\textbf{Soluzione} & {Implementare un limite al numero di esecuzione di una funzionalità in un definito quanto di tempo attraverso il concetto di \textit{function modifiers} di Solidity. Generalmente il meccanismo di conteggio può essere implementato attraverso una variabile di stato contatore e una funzione di \textit{reset} del contatore. } \\ \hline
 					\textbf{Riconoscimento} & {Data la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca della definizione e utilizzo di un modifier denominato in modo particolare, come ad esempio \textit\mbox{"RateLimited"}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:rate_limit]{Appendice} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite{8327565}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:rate_limit} \newline Bibliografia: \cite{maxwoe} \cite{cjgdev} \cite{8327565}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);
@@ -478,7 +478,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 					\textbf{Problema} & {Si immagini uno scenario in cui si voglia mettere in uno stato di manutenzione temporanea il contratto per poi ritornare in servizio senza dover cambiare indirizzo. Durante la manutenzione il contratto seppur attivo deve rifiutare qualsiasi richiesta pervenuta.} \\ \hline
 					\textbf{Soluzione} & {La logica del contratto durante la manutenzione precedentemente descritta può essere realizzata attraverso la funzione di \textit{fallback()} messa a disposizione da Solidity, la quale viene invocata qualora la funzionalità richiesta dalla transizione non è definita nel contratto.} \\ \hline
 					\textbf{Riconoscimento} & {Si individua un contratto in cui è definita solo la funzione di \textit{fallback()}, che esegue un \textit{revert()}.} \\ \hline
-					\textbf{Riferimenti} & {Codice di riferimento: \hyperref[appendix:rejector]{Appendice} \newline Bibliografia: \cite{cjgdev}} \\
+					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:rejector} \newline Bibliografia: \cite{cjgdev}} \\
 				\end{tabular}
 			};
 			\draw [rounded corners=.5em] (table.north west) rectangle (table.south east);

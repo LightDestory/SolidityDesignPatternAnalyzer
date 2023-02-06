@@ -3,8 +3,7 @@
 \setcounter{secnumdepth}{0}
 {\section{Codice di riferimento degli Authorization Design Pattern}\label{appendix:codici}
 
-{\label{appendix:access_restriction}
-	\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Access Restriction}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Access Restriction}, label={appendix:access_restriction}]
 contract AccessRestriction {
 	uint256 public creationTime = block.timestamp;
 	modifier onlyBefore(uint256 _time) {
@@ -21,7 +20,7 @@ contract AccessRestriction {
 }
 \end{lstlisting}}
 
-{\label{appendix:ownership}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Ownership}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Ownership}, label={appendix:ownership}]
 contract Ownable {
 	address private _owner;
 	event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -39,7 +38,7 @@ contract Ownable {
 \newpage
 {\section{Codice di riferimento dei Behavioral Design Pattern}
 
-{\label{appendix:commit_and_reveal}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Commit and Reveal}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Commit and Reveal}, label={appendix:commit_and_reveal}]
 contract CommitReveal {
 	struct Commit {string choice; string secret; string status;}
 	mapping(address => mapping(bytes32 => Commit)) public userCommits;
@@ -77,7 +76,7 @@ contract CommitReveal {
 }
 \end{lstlisting}}
 
-{\label{appendix:guardcheck}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per GuardCheck}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per GuardCheck}, label={appendix:guardcheck}]
 contract GuardCheck {
 	function donate(address addr) payable public {
 		require(addr != address(0));
@@ -97,7 +96,7 @@ contract GuardCheck {
 }
 \end{lstlisting}}
 
-{\label{appendix:oracle}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Oracle}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Oracle}, label={appendix:oracle}]
 contract Oracle {
 	address knownSource = address(0x1234);
 	struct Request {
@@ -134,7 +133,7 @@ contract OracleConsumer {
 }
 \end{lstlisting}}
 
-{\label{appendix:pull_over_push}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Pull Over Push}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Pull Over Push}, label={appendix:pull_over_push}]
 contract Auction {
 	address public highestBidder;
 	uint highestBid;
@@ -157,7 +156,7 @@ contract Auction {
 
 \newpage
 
-{\label{appendix:randomness}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Randomness}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Randomness}, label={appendix:randomness}]
 contract SimpleRandom {
 	function simpleRandomNumber() internal view returns (uint) {
 		return uint(blockhash(block.number - 1));
@@ -171,7 +170,7 @@ contract SimpleRandom {
 }
 \end{lstlisting}}
 
-{\label{appendix:state_machine}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per State Machine}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per State Machine}, label={appendix:state_machine}]
 contract DepositLock {
 	enum Stages {
 		AcceptingDeposits,
@@ -208,7 +207,7 @@ contract DepositLock {
 \newpage
 {\section{Codice di riferimento dei Gas Economic Design Pattern}
 
-{\label{appendix:memory_array_building}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Memory Array Building}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Memory Array Building}, label={appendix:memory_array_building}]
 contract MemoryArrayBuilding {
 	struct Item {
 		string name;
@@ -233,7 +232,7 @@ contract MemoryArrayBuilding {
 }
 \end{lstlisting}}
 
-{\label{appendix:string_equality_comparison}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per String Equality Comparison}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per String Equality Comparison}, label={appendix:string_equality_comparison}]
 contract SimpleContractExample {
 	function hashCompareCheck(string memory _a, string memory _b) internal pure returns (bool) {
 		return
@@ -249,7 +248,7 @@ contract SimpleContractExample {
 }
 \end{lstlisting}}
 \newpage
-{\label{appendix:tight_variable_packing}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Tight Variable Packing}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Tight Variable Packing}, label={appendix:tight_variable_packing}]
 contract StructPackingExample {
 	struct CheapStruct {
 		uint8 a;
@@ -270,7 +269,7 @@ contract StructPackingExample {
 \end{lstlisting}}}
 {\section{Codice di riferimento dei Lifecycle Design Pattern}
 
-{\label{appendix:auto_deprecation}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Auto Deprecation}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Auto Deprecation}, label={appendix:auto_deprecation}]
 contract Deprecatable {
 	uint expires;
 	constructor(uint _lifetime) { 
@@ -288,7 +287,7 @@ contract Deprecatable {
 }
 \end{lstlisting}}
 
-{\label{appendix:mortal}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Mortal}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Mortal}, label={appendix:mortal}]
 contract Mortal is Ownable {
 	function destroy() public onlyOwner { 
 		selfdestruct(payable(_owner)); 
@@ -302,7 +301,7 @@ contract Mortal is Ownable {
 \newpage
 {\section{Codice di riferimento dei Maintenance Design Pattern}
 
-{\label{appendix:data_segregation}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Data Segregation}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Data Segregation}, label={appendix:data_segregation}]
 contract Storage {
 	mapping(bytes32 => uint256) public uintStorage;
 	mapping(bytes32 => address) public addressStorage;
@@ -326,7 +325,7 @@ contract Logic {
 }
 \end{lstlisting}}
 
-{\label{appendix:register}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Register}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Register}, label={appendix:register}]
 contract Register is Ownable {
 	address public currentVersion;
 	address[] previousVersions;
@@ -345,7 +344,7 @@ contract Register is Ownable {
 }
 \end{lstlisting}}
 
-{\label{appendix:relay}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Relay}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Relay}, label={appendix:relay}]
 contract Relay is Ownable {
 	address public currentVersion;
 	constructor(address initAddr) { currentVersion = initAddr; }
@@ -361,7 +360,7 @@ contract Relay is Ownable {
 }
 {\section{Codice di riferimento dei Security Design Pattern}
 
-{\label{appendix:balance_limit}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Balance Limit}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Balance Limit}, label={appendix:balance_limit}]
 contract BalanceLimit {
 	uint256 limit;
 	constructor(uint256 _value) {
@@ -377,7 +376,7 @@ contract BalanceLimit {
 }
 \end{lstlisting}}
 
-{\label{appendix:check_effects_interactions}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Check Effects Interactions}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Check Effects Interactions}, label={appendix:check_effects_interactions}]
 contract ChecksEffectsInteractions {
 	mapping(address => uint256) balances;
 	function deposit() public payable {
@@ -391,7 +390,7 @@ contract ChecksEffectsInteractions {
 }
 \end{lstlisting}}
 
-\label{appendix:emergency_stop}{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Emergency Stop}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Emergency Stop}, label={appendix:emergency_stop}]
 contract EmergencyStop is Ownable {
 	bool private contractStopped = false;
 	modifier haltInEmergency() {
@@ -412,7 +411,7 @@ contract EmergencyStop is Ownable {
 }
 \end{lstlisting}}
 \newpage
-{\label{appendix:mutex}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Mutex}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Mutex}, label={appendix:mutex}]
 contract Mutex {
 	bool locked = false;
 	modifier noReentrancy() {
@@ -424,7 +423,7 @@ contract Mutex {
 }
 \end{lstlisting}}
 
-{\label{appendix:rate_limit}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Rate Limit}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Rate Limit}, label={appendix:rate_limit}]
 contract RateLimiter {
 	uint256 executions;
 	uint256 enableEvery;
@@ -445,7 +444,7 @@ contract RateLimiter {
 }
 \end{lstlisting}}
 
-{\label{appendix:rejector}\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Rejector}]
+{\begin{lstlisting}[language=Solidity, caption={Codice di riferimento per Rejector}, label={appendix:rejector}]
 contract Rejector {
 	fallback() external {
 		revert();
@@ -455,5 +454,5 @@ contract Rejector {
 }
 \newpage
 \section{JSONSchema dei Design Pattern Descriptor}
-	{\begin{lstlisting}[language=json, caption={JSONSchema dei Design Pattern Descriptor}]
+{\begin{lstlisting}[language=json, caption={JSONSchema dei Design Pattern Descriptor}, label={appendix:json_schema}]
 {"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"checks":{"type":"array","items":{"anyOf":[{"type":"object","properties":{"check_type":{"type":"string","const":"comparison"},"binary_operations":{"type":"array","items":[{"type":"object","properties":{"operator":{"type":"string"},"operand_1":{"type":"string"},"operand_2":{"type":"string"}},"required":["operator","operand_1","operand_2"]}],"uniqueItems":true,"minItems":1}},"required":["check_type","binary_operations"]},{"type":"object","properties":{"check_type":{"type":"string","const":"inheritance"},"parent_names":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","parent_names"]},{"type":"object","properties":{"check_type":{"type":"string","const":"modifier"},"modifiers":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","modifiers"]},{"type":"object","properties":{"check_type":{"type":"string","const":"rejector"}},"required":["check_type"]},{"type":"object","properties":{"check_type":{"type":"string","const":"tight_variable_packing"}},"required":["check_type"]},{"type":"object","properties":{"check_type":{"type":"string","const":"fn_return_parameters"},"parameters_list":{"type":"array","items":[{"type":"object","properties":{"storage_location":{"type":"string"},"type":{"type":"string"}},"required":["storage_location","type"]}],"uniqueItems":true,"minItems":1}},"required":["check_type","parameters_list"]},{"type":"object","properties":{"check_type":{"type":"string","const":"memory_array_building"}},"required":["check_type"]},{"type":"object","properties":{"check_type":{"type":"string","const":"fn_call"},"callable_function":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","callable_function"]},{"type":"object","properties":{"check_type":{"type":"string","const":"fn_definition"},"fn_names":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","fn_names"]},{"type":"object","properties":{"check_type":{"type":"string","const":"event_emit"},"event_names":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","event_names"]},{"type":"object","properties":{"check_type":{"type":"string","const":"enum_definition"},"enum_names":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","enum_names"]},{"type":"object","properties":{"check_type":{"type":"string","const":"check_effects_interaction"}},"required":["check_type"]},{"type":"object","properties":{"check_type":{"type":"string","const":"state_toggle"},"state_names":{"type":"array","items":[{"type":"string"}],"uniqueItems":true,"minItems":1}},"required":["check_type","state_names"]},{"type":"object","properties":{"check_type":{"type":"string","const":"relay"}},"required":["check_type"]},{"type":"object","properties":{"check_type":{"type":"string","const":"eternal_storage"}},"required":["check_type"]}]},"uniqueItems":true,"minItems":1}},"required":["name","checks"]}\end{lstlisting}}
