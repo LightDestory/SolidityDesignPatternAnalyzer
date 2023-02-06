@@ -34,6 +34,8 @@ def bootstrap(default_descriptor: Path) -> dict[str, str]:
     settings.verbose = inputs["verbose"]
     settings.allow_incompatible = inputs["allow_incompatible"]
     settings.auto_plot = inputs["auto_plot"]
+    if inputs["action"] == "describe":
+        del inputs["descriptor"]
     del inputs["verbose"]
     del inputs["allow_incompatible"]
     del inputs["auto_plot"]

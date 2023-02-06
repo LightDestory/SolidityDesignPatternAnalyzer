@@ -20,15 +20,17 @@ def main() -> None:
     current_dir: Path = Path(__file__).parent
     settings.schema_path = f"{current_dir}{settings.schema_path}"
     inputs: dict[str, str] = bootstrap(default_descriptor=Path(f"{current_dir}/descriptors/"))
-    desc_validator = DescriptorValidator(inputs["descriptor"])
+    desc_validator = DescriptorValidator(inputs["descriptor"] if "descriptor" in inputs else "")
     computation_results: dict[str, dict[str, dict[str, bool]]] | dict[str, list[dict]]
-    logging.info(colored("Loading schema...", "yellow"))
-    if not desc_validator.load_schema(schema_path=inputs["schema"]):
-        exit(-1)
-    logging.info(colored("Loading descriptors...", "yellow"))
-    descriptors: list[dict] = desc_validator.load_descriptors()
-    if not descriptors:
-        exit(-1)
+    descriptors: list[dict] = []
+    if inputs["action"] == "analyze":
+        logging.info(colored("Loading schema...", "yellow"))
+        if not desc_validator.load_schema(schema_path=inputs["schema"]):
+            exit(-1)
+        logging.info(colored("Loading descriptors...", "yellow"))
+        descriptors = desc_validator.load_descriptors()
+        if not descriptors:
+            exit(-1)
     scanner: SolidityScanner = SolidityScanner(descriptors=descriptors)
     logging.info(colored("Parsing solidity file...", "yellow"))
     if not scanner.parse_solidity_file(solidity_file_path=inputs["target"]):
