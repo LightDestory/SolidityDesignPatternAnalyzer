@@ -35,8 +35,10 @@
 \definecolor{delim}{RGB}{20,105,176}
 \colorlet{numb}{magenta!60!black}
 \lstdefinelanguage{json}{
-	keywords=[1]{items, type, properties, const, name, checks, $schema, check_type, required, operator, operand_, minItems, uniqueItems, state_names, parent_names, enum_names, event_names, fn_names, callable_function, parameters_list, storage_location, modifiers, binary_operations, anyOf, nome, cognome, genere, via, indirizzo, eta, citta, paese, interessi},
+	keywords=[1]{items, type, properties, const, name, checks, $schema, check_type, required, operator, operand_, minItems, uniqueItems, state_names, parent_names, enum_names, event_names, fn_names, callable_function, parameters_list, storage_location, modifiers, binary_operations, anyOf, nome, cognome, genere, via, indirizzo, eta, citta, paese, interessi, Ownable, AccessRestriction, AutoDeprecation, BalanceLimit, CheckEffectsInteraction, CircuitBreaker, CommitReveal, EternalStorage, GuardCheck, MemoryArrayBuilding, Mortal, Mutex, Oracle, Ownership, PullOverPush, Randomness, RateLimit, Rejector, Relay, SecureTransfer, StateMachine, StringEquality, TightVariablePacking},
 	keywordstyle=\color{codepurple}\bfseries,
+	keywords=[2]{true, false},
+	keywordstyle=[2]\color{lightblue}\bfseries,
 	literate=
 	*{0}{{{\color{numb}0}}}{1}
 	{1}{{{\color{numb}1}}}{1}
@@ -148,7 +150,7 @@
 
 
 \begin{frontmatter}
-\pagenumbering{arabic} \setcounter{page}{1}
+\pagenumbering{arabic} \setcounter{page}{42}
 \include{components/conclusioni}
 \printbibliography[heading=bibintoc]
 \include{components/appendix}
