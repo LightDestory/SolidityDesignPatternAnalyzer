@@ -309,7 +309,7 @@ Successivamente, vengono eseguiti i controlli contenuti in ogni descriptor prece
 In caso di errori di sintassi all'interno del codice sorgente il processo viene terminato.
 
 \subsection{Fase di Report dei risultati}
-Nella fase di \textit{report dei risultati}, viene stampato sul terminale una sintesi dell'esito dei controlli eseguiti. Inoltre, tale sintesi viene salvata sul disco in formato JSON, nella stesso \textit{path} del file sorgente fornito in input.\par
+Nella fase di \textit{report dei risultati}, viene stampato sul terminale una sintesi dell'esito dei controlli eseguiti. Inoltre, tale sintesi viene salvata sul disco in formato JSON, nello stesso \textit{path} del file sorgente fornito in input.\par
 L'esito positivo di uno dei controllo di un descriptor suggerisce, in quanto non è possibile fornire la certezza, che il design pattern rappresentato potrebbe essere in uso.\par
 Opzionalmente, è possibile visualizzare la sintesi sotto forma di grafico.
 \newline
@@ -374,9 +374,9 @@ Successivamente, viene eseguita una serie di funzioni di supporto per estrarre t
 In caso di errori di sintassi all'interno del codice sorgente il processo viene terminato.
 
 \subsection{Fase di Generazione del descriptor}
-Nella fase di \textit{generazione del descriptor}, le informazioni utili estratte vengono raccolte in un descriptor, il quale viene salvato sul disco nella stesso \textit{path} del file sorgente fornito in input.\par
+Nella fase di \textit{generazione del descriptor}, le informazioni utili estratte vengono raccolte in un descriptor, il quale viene salvato sul disco nello stesso \textit{path} del file sorgente fornito in input.\par
 Segue il descriptor generato usando il codice \ref{appendix:ownership}:
-{\begin{lstlisting}[language=json, caption={Report del codice di riferimento dell'Ownership}, label={report:ownership-text}]
+{\begin{lstlisting}[language=json, caption={Report del codice di riferimento dell'Ownership}]
 {
 	"name": "Ownable",
 	"checks": [
