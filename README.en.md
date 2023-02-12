@@ -8,7 +8,7 @@
 <h3 align="center">Solidity Design Pattern Analyzer</h3>
 
   <p align="center">
-    Un utility per il riconoscimento di design pattern su blockchain tramite analisi statica del codice
+    A tool for design pattern recognition on blockchain through static code analysis
     <br />
     <br />
     This README is available in the following languages:
@@ -19,41 +19,43 @@
 </div>
 
 <details>
-  <summary>Tabella dei Contenuti</summary>
+  <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#informazioni-sul-progetto">Informazioni sul Progetto</a>
+      <a href="#about-the-project">About The Project</a>
       <ul>
-        <li><a href="#basato-su">Basato su</a></li>
+        <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
     <li>
-      <a href="#guida-all-utilizzo">Guida all'utilizzo</a>
+      <a href="#getting-started">Getting Started</a>
       <ul>
-        <li><a href="#prerequisiti">Prerequisiti</a></li>
-        <li><a href="#come-usarlo">Come usarlo</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#usage">Usage</a></li>
       </ul>
     </li>
-    <li><a href="#licenza">Licenza</a></li>
-    <li><a href="#bibliografia">Bibliografia</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#bibliography">Bibliography</a></li>
   </ol>
 </details>
 
 
-## Informazioni sul Progetto
 
-Solidity Design Pattern Analyzer è un applicativo software sviluppato per la mia tesi di laurea per il CdL Triennale in Informatica presso l'Università degli Studi di Catania.
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-L’applicativo software e in grado di eseguire le seguenti operazioni:
-- Rilevare, nei limiti linguistici e delle dipendenze utilizzate, tutti e ventidue i design pattern documentati nella tesi, i cui relativi descriptor sono inclusi nel codice sorgente, ed e possibile, mediante la combinazione di controlli generici, definire nuovi descriptor per riconoscere design pattern futuri;
-- Descrivere uno smart-contract, ovvero estrarre le informazioni utili a creare un
-nuovo descriptor;
+Solidity Design Pattern Analyzer is a software application developed for my thesis for the Bachelor's Degree in Computer Science at the University of Catania.
+
+The software application is capable of performing the following tasks:
+- Detect, within the limits of the language and dependencies used, all twenty-two design patterns documented in the thesis, whose related descriptors are included in the source code, and it is possible, through the combination of generic checks, to define new descriptors to recognize future design patterns;
+- Describing a smart-contract, i.e., extracting information useful for creating a
+new descriptor;
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
-### Basato su
+### Built With
 
 * [Python](https://www.python.org/)
 * [python-solidity-parser](https://github.com/ConsenSys/python-solidity-parser)
@@ -63,38 +65,38 @@ nuovo descriptor;
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-## Guida all'utilizzo
+## Getting Started
 
-Prima di utilizzare l'applicativo è necessario installare le dipendenze.
+Dependencies must be installed before using the application.
 
-### Prerequisiti
+### Prerequisites
 
-Per installare le dipendeze puoi usare il package installer di python denominato _pip_:
-* Come pacchetti globali:
-  ```sh
+To install dependencies you must use python's package installer named _pip_:
+* As global packages:
+  ``sh
   pip install -r requirements.txt
   ```
-* Tramite ambiente virtuale:
-  ```sh
+* Via virtual environment:
+  ``sh
   python3 -m venv /path/to/new/virtual/environment
   source /path/to/new/virtual/environment/bin/activate
   pip install -r requirements.txt
   ```
 
-### Come usarlo
+### Usage
 
-Per utilizzare Analyzer e necessario fornire una serie di parametri, qui elencati:
-| Parametro | Descrizione |
+To use Analyzer it is necessary to provide a number of parameters, listed here:
+| Parameter | Description |
 | --------- | ---------------------------------------------------------------------------------------------- |
-|`-h, --help` | Un  parametro opzionale che, se fornito, fara stampare una guida sull’utilizzo nel terminale |
-|`-a, --action` | Un  parametro obbligatorio che accetta soltanto i valori ”analyze” e ”describe”, a seconda dell’operazione che si vuole eseguire. |
-|`-t, --target` | Un  parametro obbligatorio che rappresenta la path, assoluta o relativa, del file contenente del codice sorgente Solidity. |
-|`-d, --descriptor` | Un  parametro obbligatorio per l’operazione ”analyze” che rappresenta la path, assoluta o relativa, del file o cartella contenente i ”Design Pattern Descriptor”. Se omesso verrausato un path predefinito. |
-|`-v, --verbose` | Un  parametro opzionale che, se fornito, fara stampare nel terminale i log di debug, normalmente non visualizzati. |
-|`-ai, --allow-incompatible` | Un  parametro opzionale che, se fornito, fara ignorare il con- trollo di compatibilita della versione di Solidity utilizzata nel file fornito. |
-|`-ap, --auto-plot` | Un  parametro opzionale che, se fornito, fara visualizzare au- tomaticamente il grafico dei risultati della ricerca dei design pattern. |
+|`-h, --help` | An optional parameter that, if provided, will cause a guide on how to use it to be printed in the terminal |
+|`-a, --action` | A mandatory parameter that accepts only the values "analyze" and "describe", depending on the operation to be performed. |
+|`-t, --target` | A mandatory parameter representing the path, absolute or relative, to the file containing some Solidity source code. |
+|`-d, --descriptor` | A mandatory parameter for the "analyze" operation that represents the path, absolute or relative, of the file or folder containing the "Design Pattern Descriptors". If omitted a default path will be used. |
+|`-v, --verbose` | An optional parameter that, if supplied, will cause debug logs, not normally displayed, to be printed in the terminal. |
+|`-ai, --allow-incompatible` | An optional parameter that, if supplied, will cause the compatibility con- trol of the version of Solidity used in the supplied file to be ignored. |
+|`-ap, --auto-plot` | An optional parameter that, if supplied, will make the graph of design pattern search results display au- tomatically. |
 
-Per esempio, volendo analizzare uno smart-contract al fine di individuare l’utilizzo dell’Ownership pattern e necessario eseguire il comando:
+For example, wanting to analyze a smart-contract in order to detect the use of the Ownership pattern, it is necessary to execute the command:
 
   ```sh
   python analyzer.py -a analyze -t ./source_code.sol -d ./Ownership_descriptor.json
@@ -103,14 +105,13 @@ Per esempio, volendo analizzare uno smart-contract al fine di individuare l’ut
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-## Licenza
+## License
 
-Il software è rilasciato sotto licenza MIT. Visionare `LICENSE` per maggiori informazioni.
+This software is distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-## Bibliografia
+## Bibliography
 
 - [What is Ethereum?](https://ethereum.org/it/what-is-ethereum/)
 - [Solidity Documentation.](https://docs.soliditylang.org/)
