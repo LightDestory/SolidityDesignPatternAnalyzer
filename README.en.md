@@ -73,11 +73,11 @@ Dependencies must be installed before using the application.
 
 To install dependencies you must use python's package installer named _pip_:
 * As global packages:
-  ``sh
+  ```sh
   pip install -r requirements.txt
   ```
 * Via virtual environment:
-  ``sh
+  ```sh
   python3 -m venv /path/to/new/virtual/environment
   source /path/to/new/virtual/environment/bin/activate
   pip install -r requirements.txt
