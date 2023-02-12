@@ -28,7 +28,7 @@
       </ul>
     </li>
     <li>
-      <a href="#guida-all-utilizzo">Guida all'utilizzo</a>
+      <a href="#guida-allutilizzo">Guida all'utilizzo</a>
       <ul>
         <li><a href="#prerequisiti">Prerequisiti</a></li>
         <li><a href="#come-usarlo">Come usarlo</a></li>
