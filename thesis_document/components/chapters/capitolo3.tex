@@ -188,7 +188,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 			\node (table) [inner sep=0pt] {
 				\def\arraystretch{1.5}
 				\begin{tabular}{p{0.21\linewidth} | p{0.74\linewidth}}
-					\textbf{Problema} & {Si immagini uno scenario in cui un contratto passi da uno stato iniziale, e attraverso diversi stati intermedi, a uno stato finale. In ogni fase il contratto espone agli utenti un comportamento e delle funzionalità differenti. Il comportamento descritto può essere osservato in una moltitudine di casi d'uso: aste, gioco d'azzardo, crowdfunding, ect...} \\ \hline
+					\textbf{Problema} & {Si immagini uno scenario in cui un contratto passi da uno stato iniziale, e attraverso diversi stati intermedi, a uno stato finale. In ogni fase il contratto espone agli utenti un comportamento e delle funzionalità differenti. Il comportamento descritto può essere osservato in una moltitudine di casi d'uso: aste, gioco d'azzardo, crowdfunding, etc...} \\ \hline
 					\textbf{Soluzione} & {Implementare una macchina a stati per modellare e rappresentare le diverse fasi comportamentali del contratto e le loro transizioni.} \\ \hline
 					\textbf{Riconoscimento} & {Data la complessità e la libertà implementativa, il riconoscimento di questo design pattern si basa sulla ricerca di definizione e uso di un \textit{modifier} relativo agli stati e la definizione di un \textit{enum} di stati.} \\ \hline
 					\textbf{Riferimenti} & {Codice di riferimento: \ref{appendix:state_machine} \newline Bibliografia: \cite{maxwoe}} \\
@@ -202,10 +202,11 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 }
 
 {\section{Gas Economic Design Pattern}
+	Con il termine "gas" si riferisce al costo di esecuzione di una transazione o di uno smart contract sulla rete. Il gas è un'unità di misura dello sforzo computazionale, ovvero l'uso di risorse come la CPU e la memoria, richiesto per eseguire tali operazioni.\par
+	Quando un utente vuole eseguire un'operazione, deve specificare la quantità di gas che è disposto a pagare per la computazione. Più complessa è l'operazione, più gas richiede.\par
 	I \textit{Gas Economic design pattern} propongono meccanismi considerabili come \textit{"best practice"} per ridurre il consumo di gas durante l'esecuzione delle funzionalità dello smart-contract. \par
-	Per i contratti, Le operazioni con un consumo di gas altamente variabile e imprevedibile costituiscono un problema, in quanto comportano il rischio che le transazioni rimangano senza gas e si ottengano di conseguenza dei comportamenti indesiderati. Pertanto, è auspicabile un fabbisogno di gas basso, stabile e prevedibile.\par
+	Per i contratti, le operazioni con un consumo di gas altamente variabile e imprevedibile costituiscono un problema, in quanto comportano il rischio che le transazioni rimangano senza gas e si ottengano di conseguenza dei comportamenti indesiderati. Pertanto, è auspicabile un fabbisogno di gas basso, stabile e prevedibile.\par
 	Si individuano i seguenti design pattern: \textit{Memory Array Building}, \textit{String Equality Comparison} e \textit{Tight Variable Packing}.
-	\newpage
 	{\subsection{Memory Array Building Pattern}
 		Il \textit{Memory Array Building} pattern propone un meccanismo per aggregare e recuperare i dati dallo storage di un contratto in modo efficiente dal punto di vista del consumo di gas.\par	L'interazione con lo storage di un contratto sulla blockchain è una delle operazioni più costose dell'EVM. Pertanto, è necessario memorizzare solo i dati necessari ed evitare, se possibile, la ridondanza. Nei sistemi tradizionali l'unico costo rilevante delle query in uno storage è il tempo, mentre in Ethereum anche semplici interrogazioni possono costare una quantità sostanziale di gas, che ha un riscontro monetario diretto.\par
 		Si potrebbe mitigare il costo del gas relativo alla lettura di un dato definendo la variabile contenitore come pubblica, generando così un \textit{getter} in background che permette di accedere gratuitamente al valore della variabile, ma ciò non è sempre applicabile.
@@ -294,7 +295,7 @@ Si individuano i seguenti design pattern: \textit{Commit \& Reveal}, \textit{Gua
 	}
 	{\subsection{Mortal Pattern}
 		Il \textit{Mortal} pattern propone un meccanismo per terminare e distruggere un contratto.\par
-		Poiché è la distruzione di un contratto è un operazione critica, la funzionalità è riservata al proprietario del contratto e per questo motivo l'accesso a tale funzione viene spesso gestito attraverso un \textit{Authorization pattern design}.
+		Poiché la distruzione di un contratto è un operazione critica, la funzionalità è riservata al proprietario del contratto e per questo motivo l'accesso a tale funzione viene spesso gestito attraverso un \textit{Authorization pattern design}.
 		\begin{table}[H]
 			\centering
 			\begin{tikzpicture}

@@ -15,7 +15,7 @@ In sintesi, Python è un linguaggio di programmazione estremamente potente e ver
 
 \subsection{Python-Solidity-Parser}
 Alla base della tecnica di analisi statica vi è una componente software denominata \textit{"parser"}. Un parser analizza un input, spesso una stringa o un file testuale, e lo trasforma in una struttura dati più significativa, come un\textit{ albero sintattico astratto} (\textit{Abstract Syntax Tree}, \textit{AST}).\par
-La struttura dati prodotta da un parser può essere facilmente manipolata o elaborata da altre componenti software, le quali potranno effettuare un'analisi semantica dei dati e pendere decisioni basandosi su di essa.\\ \newline
+La struttura dati prodotta da un parser può essere facilmente manipolata o elaborata da altre componenti software, le quali potranno effettuare un'analisi semantica dei dati e prendere decisioni basandosi su di essa.\\ \newline
 Il processo di parsing consiste di solito di diverse fasi, tra cui:
 \begin{itemize}
 	\item \textit{Analisi lessicale}: in cui si analizza l'input carattere per carattere e lo divide in token, ovvero unità più piccole e significative;
@@ -30,7 +30,7 @@ Per quanto riguarda Solidity e Python, esiste un parser sperimentale open-source
 		\centering
 		\includegraphics[scale=0.09]{json-logo}
 	\end{wrapfigure}
-	JSON, acronimo di \textit{"JavaScript Object Notation"}, è un formato di testo semplice e leggero per lo scambio di dati tra sistemi informatici. JSON è stato progettato per essere facile da leggere e scrivere sia per le macchine sia per gli esseri umani, può essere facilmente manipolato ed elaborato da molti linguaggi di programmazione come Python, Java, JavaScript e molti altri. Per questo motivo è diventato uno dei formati di dati più diffusi per l'integrazione tra applicazioni e il trasporto di dati tramite internet. \par
+	JSON\cite{json}, acronimo di \textit{"JavaScript Object Notation"}, è un formato di testo semplice e leggero per lo scambio di dati tra sistemi informatici. JSON è stato progettato per essere facile da leggere e scrivere sia per le macchine sia per gli esseri umani, può essere facilmente manipolato ed elaborato da molti linguaggi di programmazione come Python, Java, JavaScript e molti altri. Per questo motivo è diventato uno dei formati di dati più diffusi per l'integrazione tra applicazioni e il trasporto di dati tramite internet. \par
 	I dati sono rappresentati come coppie chiave-valore, dove la chiave è una stringa e il valore può essere una stringa, un numero, un booleano, un array o un altro oggetto JSON. Gli oggetti JSON sono delimitati da parentesi graffe "\{\}" e i membri dell'oggetto sono separati da virgole. Gli array JSON, invece, sono delimitati da parentesi quadre "[]" e i membri dell'array sono separati da virgole.
 	
 	{\begin{lstlisting}[language=json, caption={Esempio di oggetto JSON}]

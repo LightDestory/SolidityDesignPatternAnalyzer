@@ -55,7 +55,7 @@ Tramite l'utilizzo del parser si effettua un controllo di correttezza sintattica
 
 \noindent Con l'obiettivo di ottenere un sistema flessibile e facilmente estendibile, senza dover effettuare modifiche al codice sorgente di Analyzer, si è deciso di implementare, quando possibile, controlli generici.\par
 L'utilizzo di controlli generici, con parametri configurabili, permette di definire un'unica logica applicabile alla ricerca di design pattern differenti.\par
-Tale soluzione non è, però, sempre applicabile, infatti per specifici design pattern si è preferito implementare controlli specializzati al loro rilevamento.
+Tale soluzione non è, però, sempre applicabile. Infatti per specifici design pattern si è preferito implementare controlli specializzati al loro rilevamento.
 
 \subsection{Controlli generici}
 I controlli generici implementano la ricerca e disamina di elementi comuni, come ad esempio un confronto o l'utilizzo di modifier.\par
@@ -354,6 +354,7 @@ Il report testuale mostrato nel Codice \ref{report:ownership-text} può essere v
 	\includegraphics[width=\linewidth]{ownership-plot}
 	\caption{Grafico a barre dell'analisi del codice di riferimento dell'Ownership}
 \end{figure}
+\noindent L'output denota che nel codice di riferimento dell'\textit{Ownership} pattern siano presenti elementi caratteristici dell'\textit{Access Restriction} pattern e \textit{Guard Check} pattern.
 
 \section{Descrizione di uno smart-contract}
 Fornendo il valore \textit{"describe"} come parametro \textit{"action"} viene effettuata descrizione dello smart-contract. \par
