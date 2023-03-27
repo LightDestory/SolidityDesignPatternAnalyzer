@@ -15,7 +15,7 @@
     <br />
     <a href="README.md">Italian</a>
     ·
-    <a href="README.en.md">English</a>
+    English
 </div>
 
 <details>
