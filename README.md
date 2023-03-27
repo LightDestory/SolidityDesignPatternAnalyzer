@@ -13,7 +13,7 @@
     <br />
     This README is available in the following languages:
     <br />
-    <a href="README.md">Italian</a>
+    Italian
     ·
     <a href="README.en.md">English</a>
 </div>
