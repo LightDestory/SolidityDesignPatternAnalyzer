@@ -1,1 +1,5 @@
 **/results*.json
+**/batch*.json
+**/results*.csv
+**/batch*.csv
+dataTest/*

@@ -8,53 +8,79 @@ from modules.config import settings
 from modules.descriptor_validator import DescriptorValidator
 from modules.plotter import Plotter
 from modules.solidity_scanner import SolidityScanner
-from modules.utils.utils import bootstrap, format_analysis_results, save_analysis_results, ask_confirm, \
-    save_describe_results
+from modules.utils.utils import bootstrap, terminal_result_formatter, save_analysis_results, ask_confirm, \
+    save_describe_results, save_batch_analysis_results
 
 logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
 logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 
+scanner: SolidityScanner
+batch_result_collector: dict[str, dict[str, dict[str, dict[str, bool]]]] = {}
 
-def main() -> None:
-    current_dir: Path = Path(__file__).parent
-    settings.schema_path = f"{current_dir}{settings.schema_path}"
-    inputs: dict[str, str] = bootstrap(default_descriptor=Path(f"{current_dir}/descriptors/"))
-    desc_validator = DescriptorValidator(inputs["descriptor"] if "descriptor" in inputs else "")
-    computation_results: dict[str, dict[str, dict[str, bool]]] | dict[str, list[dict]]
-    descriptors: list[dict] = []
-    if inputs["action"] == "analyze":
-        logging.info(colored("Loading schema...", "yellow"))
-        if not desc_validator.load_schema(schema_path=inputs["schema"]):
-            exit(-1)
-        logging.info(colored("Loading descriptors...", "yellow"))
-        descriptors = desc_validator.load_descriptors()
-        if not descriptors:
-            exit(-1)
-    scanner: SolidityScanner = SolidityScanner(descriptors=descriptors)
-    logging.info(colored("Parsing solidity file...", "yellow"))
-    if not scanner.parse_solidity_file(solidity_file_path=inputs["target"]):
-        exit(-1)
+
+def execute_analysis(target_path: str) -> None:
+    logging.info("%s '%s'", colored("Parsing solidity file: ", "yellow"), colored(target_path, "cyan"))
+    if not scanner.parse_solidity_file(solidity_file_path=target_path):
+        return
     logging.info(colored("Checking solidity version...", "yellow"))
     if not scanner.is_version_compatible():
-        exit(-1)
-    if inputs["action"] == "analyze":
+        return
+    if settings.execution_mode == "analyze":
         logging.info(colored("Searching for design patterns...", "yellow"))
         computation_results = scanner.get_design_pattern_statistics()
     else:
         logging.info(colored("Generating design pattern descriptors...", "yellow"))
-        computation_results = scanner.generate_design_pattern_descriptors()
+        try:
+            computation_results = scanner.generate_design_pattern_descriptors()
+        except Exception as e:
+            logging.error(colored(f"Errore: {str(e)}", "red"))
+            return
     if not computation_results:
         logging.error(colored("The computation did not produce any results!, aborting...", "red"))
-        exit(-1)
-    if inputs["action"] == "analyze":
-        logging.info(format_analysis_results(computation_results))
-        save_analysis_results(inputs["target"], computation_results)
-        if settings.auto_plot or ask_confirm("Do you want to create a results based plot?"):
+        return
+    if settings.execution_mode == "analyze":
+        if settings.batch_mode:
+            batch_result_collector[target_path] = computation_results
+        if settings.print_result:
+            logging.info(terminal_result_formatter(computation_results))
+        if settings.write_result == "always" or (settings.write_result == "ask" and ask_confirm(
+                "Do you want to save the results to the disk?")):
+            save_analysis_results(target_path, computation_results)
+        if settings.plot == "always" or (settings.plot == "ask" and ask_confirm(
+                "Do you want to create a results based plot?")):
             Plotter(computation_results).plot_results()
     else:
-        save_describe_results(inputs["target"], computation_results)
-    logging.info(colored("Job done!", "yellow"))
+        save_describe_results(target_path, computation_results)
+
+
+def main() -> None:
+    global scanner
+    current_dir: Path = Path(__file__).parent
+    settings.schema_path = f"{current_dir}{settings.schema_path}"
+    inputs: dict[str, str] = bootstrap(default_descriptor=Path(f"{current_dir}/descriptors/"))
+    if settings.execution_mode == "analyze":
+        desc_validator = DescriptorValidator(inputs["descriptor"])
+        logging.info(colored("Loading schema...", "yellow"))
+        if not desc_validator.load_schema(schema_path=inputs["schema"]):
+            exit(-1)
+        logging.info(colored("Loading descriptors...", "yellow"))
+        settings.descriptors = desc_validator.load_descriptors()
+        if not settings.descriptors:
+            exit(-1)
+    scanner = SolidityScanner()
+    try:
+        if not settings.batch_mode:
+            execute_analysis(target_path=inputs["target"])
+        else:
+            target_directory: Path = Path(inputs["target"])
+            for target_file in target_directory.glob("**/*.sol"):
+                execute_analysis(target_path=str(target_file))
+            save_batch_analysis_results(batch_result_collector, target_directory)
+    except KeyboardInterrupt:
+        logging.info(colored("Execution interrupted by the user!", "red"))
+    finally:
+        logging.info(colored("Job done!", "yellow"))
 
 
 if __name__ == '__main__':

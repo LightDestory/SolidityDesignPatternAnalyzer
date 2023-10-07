@@ -6,7 +6,7 @@ from pathlib import Path
 from jsonschema import validate, SchemaError, ValidationError
 from termcolor import colored
 
-from modules.config import settings
+from .config import settings
 
 
 class DescriptorValidator:
@@ -63,20 +63,17 @@ class DescriptorValidator:
             logging.error(colored("Unable to load descriptors without a loaded descriptor schema", "red"))
             return []
         descriptors_path: list[Path] = self._get_available_descriptors()
+        descriptors_name: list[str] = [descriptor_path.name.split(".")[0] for descriptor_path in descriptors_path]
+        if settings.verbose:
+            logging.debug("%s '%s'", colored(f"Checking descriptors:", "blue"),
+                          colored(", ".join(descriptors_name), "cyan"))
         descriptors: list[dict] = []
         for descriptor_path in descriptors_path:
             error: str = ""
             try:
-                if settings.verbose:
-                    logging.debug("%s '%s'", colored(f"Checking descriptor:", "blue"),
-                                                   colored(str(descriptor_path), "cyan"))
                 with open(descriptor_path, "r") as descriptor_fp:
                     descriptor_object = json.load(descriptor_fp)
                 validate(instance=descriptor_object, schema=self._descriptor_schema)
-                if settings.verbose:
-                    logging.debug("%s %s", colored(descriptor_object['name'], "cyan"),
-                                                 colored("- Descriptor has been deserialized and "
-                                                         "validated successfully!", "green"))
                 descriptors.append(descriptor_object)
             except OSError as fp_error:
                 error = f"An error occurred while trying to open the file '{descriptor_path}', skipping...\n{fp_error}"
@@ -87,8 +84,10 @@ class DescriptorValidator:
                                       f"Draft-07, aborting...\n{schema_error.message}", "red"))
                 break
             except ValidationError as validation_error:
-                error = f"The descriptor '{descriptor_path}' is not valid, skipping...\n{validation_error.message}"
+                error = f"The descriptor '{descriptor_path.name}' is not valid, skipping...\n{validation_error.message}"
             finally:
                 if error:
                     logging.error(colored(error, "red"))
+        if settings.verbose:
+            logging.debug(colored("The provided descriptors have been imported successfully!", "green"))
         return descriptors
