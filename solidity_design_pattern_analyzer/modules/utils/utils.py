@@ -133,14 +133,7 @@ def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, di
                 csv_lines: list[str] = []
                 output_fp.write(get_csv_columns() + "\n")
                 for contract_name, contract_results in results.items():
-                    tmp: str = f"{target_path.name},{contract_name}"
-                    for pattern_design_results in contract_results.values():
-                        for check_results in pattern_design_results.values():
-                            if check_results["result"]:
-                                tmp += f",{check_results['result']},{check_results['line_match']},{check_results['match_statement']}"
-                            else:
-                                tmp += f",{check_results['result']},,"
-                    csv_lines.append(tmp + "\n")
+                    csv_lines.append(json_to_csv_line(target_path.name, contract_name, contract_results))
                 output_fp.writelines(csv_lines)
             logging.info("%s '%s'", colored("Results saved to:", "green"), colored(str(output_path), "cyan"))
     except IOError as fp_error:
@@ -173,14 +166,7 @@ def save_batch_analysis_results(results_wrapper: dict[str, dict[str, dict[str, d
                 else:
                     csv_lines: list[str] = []
                     for contract_name, contract_results in results.items():
-                        tmp: str = f"{target_path.name},{contract_name}"
-                        for pattern_design_results in contract_results.values():
-                            for check_results in pattern_design_results.values():
-                                if check_results["result"]:
-                                    tmp += f",{check_results['result']},{check_results['line_match']},{check_results['match_statement']}"
-                                else:
-                                    tmp += f",{check_results['result']},,"
-                    csv_lines.append(tmp + "\n")
+                        csv_lines.append(json_to_csv_line(target_path.name, contract_name, contract_results))
                     output_fp.writelines(csv_lines)
             if settings.result_format == "json":
                 output_fp.write("\n]")
@@ -245,3 +231,21 @@ def get_csv_columns() -> str:
             columns += f",{check_name},{check_name}_line,{check_name}_match"
     settings.csv_header = columns
     return columns
+
+
+def json_to_csv_line(filename: str, contract_name: str, results: dict) -> str:
+    """
+    This function converts a JSON object to a CSV line
+    :param filename: The solidity source code filename
+    :param contract_name: The smart-contract name
+    :param results: The results of the static analysis in JSON format
+    :return: A string line containing the results of the static analysis in CSV format
+    """
+    tmp: str = f"{filename},{contract_name}"
+    for pattern_design_results in results.values():
+        for check_results in pattern_design_results.values():
+            if check_results["result"]:
+                tmp += f",{check_results['result']},{check_results['line_match']},'{check_results['match_statement'].replace(',', '')}'"
+            else:
+                tmp += f",{check_results['result']},,"
+    return tmp + "\n"

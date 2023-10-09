@@ -107,7 +107,7 @@ class SolidityScanner:
         """
         logging.info("%s '%s'", colored("Analyzing smart-contract: ", "yellow"), colored(smart_contract_name, "cyan"))
         self._current_smart_contract_node = self._visitor.contracts[smart_contract_name]
-        self._current_smart_contract_definitions = self._source_unit_explorer.collect_definition(
+        self._current_smart_contract_definitions = self._source_unit_explorer.collect_definitions(
             self._current_smart_contract_node)
         results: dict[str, dict[str, dict[str, bool | str]]] = {}
         for (descriptor_index, descriptor_name) in enumerate(map(lambda d: d["name"], settings.descriptors)):
@@ -199,7 +199,7 @@ class SolidityScanner:
         :param search_in: The list of items to search on
         :return: True if there is a match, False otherwise
         """
-        string_patters: list[str] = list(filter(lambda d: "*" in d, search_for))
+        string_patters: list[str] = list(sorted(filter(lambda d: "*" in d, search_for)))
         if string_patters:
             if settings.verbose:
                 logging.debug("%s '%s'", colored("Checking descriptor's string patterns:", "magenta"),
@@ -209,16 +209,16 @@ class SolidityScanner:
                     pattern_str = pattern_str[:pattern_str.index("*any*")]
                 else:
                     pattern_str = pattern_str.replace("*", "")
-                for smart_contract_item in search_in:
+                for smart_contract_item in sorted(search_in):
                     if pattern_str in smart_contract_item:
                         return True, smart_contract_item
-        string_literals: list[str] = list(filter(lambda d: "*" not in d, search_for))
+        string_literals: list[str] = list(sorted(filter(lambda d: "*" not in d, search_for)))
         if string_literals:
             if settings.verbose:
                 logging.debug("%s '%s'", colored("Checking descriptor's string literals:", "magenta"),
                               colored(pprint.pformat(string_literals), "cyan"))
             for item in string_literals:
-                for smart_contract_item in search_in:
+                for smart_contract_item in sorted(search_in):
                     if item == smart_contract_item:
                         return True, smart_contract_item
         return False, ""
@@ -544,7 +544,7 @@ class SolidityScanner:
         :return: A list of generic tests
         """
         self._current_smart_contract_node = self._visitor.contracts[smart_contract_name]
-        self._current_smart_contract_definitions = self._source_unit_explorer.collect_definition(
+        self._current_smart_contract_definitions = self._source_unit_explorer.collect_definitions(
             self._current_smart_contract_node)
         results: list[dict] = []
         if settings.verbose:

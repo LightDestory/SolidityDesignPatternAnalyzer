@@ -20,7 +20,7 @@ class SourceUnitExplorer:
 
     # === EXPLORATION ===
 
-    def collect_definition(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, dict[str, list[dict]]]:
+    def collect_definitions(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, dict[str, list[dict]]]:
         """
         Collects the functions and modifiers of the selected contract
         :param smart_contract_node: The node of the smart contract to analyze

@@ -26,16 +26,16 @@ def execute_analysis(target_path: str) -> None:
     logging.info(colored("Checking solidity version...", "yellow"))
     if not scanner.is_version_compatible():
         return
-    if settings.execution_mode == "analyze":
-        logging.info(colored("Searching for design patterns...", "yellow"))
-        computation_results = scanner.get_design_pattern_statistics()
-    else:
-        logging.info(colored("Generating design pattern descriptors...", "yellow"))
-        try:
+    try:
+        if settings.execution_mode == "analyze":
+            logging.info(colored("Searching for design patterns...", "yellow"))
+            computation_results = scanner.get_design_pattern_statistics()
+        else:
+            logging.info(colored("Generating design pattern descriptors...", "yellow"))
             computation_results = scanner.generate_design_pattern_descriptors()
-        except Exception as e:
-            logging.error(colored(f"Errore: {str(e)}", "red"))
-            return
+    except Exception | ValueError as e:
+        logging.error(colored(f"Execution interrupted by: {str(e)}", "red"))
+        return
     if not computation_results:
         logging.error(colored("The computation did not produce any results!, aborting...", "red"))
         return

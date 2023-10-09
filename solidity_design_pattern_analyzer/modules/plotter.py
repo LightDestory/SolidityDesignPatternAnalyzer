@@ -1,10 +1,8 @@
 import logging
-import operator
-from functools import reduce
-
 import numpy as np
 from matplotlib import pyplot as plt
 from termcolor import colored
+from .config import settings
 
 
 class Plotter:
@@ -18,8 +16,7 @@ class Plotter:
         This function returns a list of used descriptors
         :return: A list used descriptors' name
         """
-        descriptors = list(self._packed_data.values())[0] # get the first value of the dictionary
-        return list(descriptors.keys())
+        return [descriptor["name"] for descriptor in settings.descriptors]
 
     def _extract_stats(self) -> dict[str, list[int]]:
         """
