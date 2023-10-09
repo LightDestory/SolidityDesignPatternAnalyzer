@@ -8,9 +8,9 @@ from termcolor import colored
 
 
 class Plotter:
-    _packed_data: dict[str, dict[str, dict[str, bool]]]
+    _packed_data: dict[str, dict[str, dict[str, dict[str, bool | str]]]]
 
-    def __init__(self, packed_data: dict[str, dict[str, dict[str, bool]]]) -> None:
+    def __init__(self, packed_data: dict[str, dict[str, dict[str, dict[str, bool | str]]]]) -> None:
         self._packed_data = packed_data
 
     def _get_descriptors(self) -> list[str]:
@@ -30,7 +30,7 @@ class Plotter:
         for descriptor in self._get_descriptors():
             grouping: list[int] = []
             for smart_contract in self._packed_data.values():
-                passed_tests: int = sum(smart_contract[descriptor].values())
+                passed_tests: int = sum(check['result'] for check in smart_contract[descriptor].values())
                 grouping.append(passed_tests)
             stats[descriptor] = grouping
         return stats

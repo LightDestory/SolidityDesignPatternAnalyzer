@@ -29,14 +29,12 @@ class SourceUnitExplorer:
         if settings.verbose:
             logging.debug(colored(f"Collecting statements...", "magenta"))
         collector: dict[str, dict[str, list[dict]]] = {"functions": {}, "modifiers": {}}
-        for fn_name in smart_contract_node.functions:
-            if not smart_contract_node.functions[fn_name]._node.body:
+        for fn_name, fn_node in smart_contract_node.functions.items():
+            if not fn_node._node.body:
                 continue
-            collector["functions"][fn_name.lower()] = \
-                smart_contract_node.functions[fn_name]._node.body.statements
-        for modifier_name in smart_contract_node.modifiers:
-            collector["modifiers"][modifier_name.lower()] = \
-                smart_contract_node.modifiers[modifier_name]._node.body.statements
+            collector["functions"][fn_name.lower()] = fn_node._node.body.statements
+        for modifier_name, modifier_node in smart_contract_node.modifiers.items():
+            collector["modifiers"][modifier_name.lower()] = modifier_node._node.body.statements
         if settings.verbose:
             for item_type in ["functions", "modifiers"]:
                 for name, statements in collector[item_type].items():
@@ -56,65 +54,86 @@ class SourceUnitExplorer:
         return set([k.lower() for k, v in smart_contract_node.stateVars.items() if
                     "name" in v["typeName"] and v["typeName"]["name"] == "bool"])
 
-    def get_all_mapping_state_vars(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
+    def get_all_mapping_state_vars(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, dict[str, str]]:
         """
         This function returns the name of all the mapping state vars of the specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
         :return: A set of state vars names
         """
-        mappings: dict[str, str] = {}
+        mappings: dict[str, dict[str, str]] = {}
         for var_name, var_node in smart_contract_node.stateVars.items():
-            if "type" in var_node["typeName"] and var_node["typeName"]["type"] == "Mapping":
-                mappings[var_name.lower()] = var_node["visibility"]
+            if "type" in var_node["typeName"] and var_node["typeName"]["type"] == "Mapping" and var_name.lower() not in mappings:
+                mappings[var_name.lower()]["visibility"] = var_node["visibility"]
+                mappings[var_name.lower()]["loc"] = var_node.loc["start"]["line"]
         return mappings
 
-    def get_base_contract_names(self, smart_contract_node: ObjectifyContractVisitor) -> set[str]:
+    def get_base_contract_names(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
         """
         This function returns the first-level parent names (inheritance) of a specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
         :return: A set of smart-contract names
         """
-        parents: set[str] = set()
+        parents: dict[str, str] = {}
         for smart_contract_parent in smart_contract_node._node.baseContracts:
-            parents.add(smart_contract_parent.baseName.namePath.lower())
+            name: str = smart_contract_parent.baseName.namePath.lower()
+            if name not in parents:
+                parents[name] = smart_contract_parent.baseName.loc["start"]["line"]
         return parents
 
-    def get_modifier_names(self, smart_contract_node: ObjectifyContractVisitor) -> set[str]:
+    def get_modifier_names(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
         """
         This function returns the modifier names defined or used in the specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
         :return: A set of modifier names
         """
-        smart_contract_modifiers: set[str] = set([name.lower() for name in smart_contract_node.modifiers])
+        smart_contract_modifiers: dict[str, str] = {}
+        for modifier, modifier_node in smart_contract_node.modifiers.items():
+            smart_contract_modifiers[modifier.lower()] = modifier_node._node.loc["start"]["line"]
         for function in smart_contract_node.functions:
             for modifier in smart_contract_node.functions[function]._node.modifiers:
-                smart_contract_modifiers.add(modifier.name.lower())
+                name: str = modifier.name.lower()
+                if name not in smart_contract_modifiers:
+                    smart_contract_modifiers[name] = modifier.loc["start"]["line"]
         return smart_contract_modifiers
 
-    def get_fn_names(self, smart_contract_node: ObjectifyContractVisitor) -> set[str]:
+    def get_fn_names(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
         """
         This function returns the function names defined in the specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
         :return: A set of function names
         """
-        return set([name.lower() for name in smart_contract_node.functions])
+        smart_contract_functions: dict[str, str] = {}
+        for fn_name, fn_body in smart_contract_node.functions.items():
+            name: str = fn_name.lower()
+            if name not in smart_contract_functions:
+                smart_contract_functions[name] = fn_body._node.loc["start"]["line"]
+        return smart_contract_functions
 
-    def get_event_names(self, smart_contract_node: ObjectifyContractVisitor) -> set[str]:
+    def get_event_names(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
         """
         This function returns the event names defined in the specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
         :return: A set of event names
         """
-        return set(map(lambda d: smart_contract_node.events[d]._node["name"].lower(),
-                       smart_contract_node.events))
+        smart_contract_events: dict[str, str] = {}
+        for event_name, event_body in smart_contract_node.events.items():
+            name: str = event_name.lower()
+            if name not in smart_contract_events:
+                smart_contract_events[name] = event_body._node.loc["start"]["line"]
+        return smart_contract_events
 
-    def get_enum_names(self, smart_contract_node: ObjectifyContractVisitor) -> set[str]:
+    def get_enum_names(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
         """
         This function returns the enum names defined in the specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
         :return: A set of enum names
         """
-        return set(map(lambda d: d.lower(), smart_contract_node.enums.keys()))
+        smart_contract_enums: dict[str, str] = {}
+        for enum_name, enum_body in smart_contract_node.enums.items():
+            name: str = enum_name.lower()
+            if name not in smart_contract_enums:
+                smart_contract_enums[name] = enum_body.loc["start"]["line"]
+        return smart_contract_enums
 
     def get_fn_return_parameters(self, fn_node: dict) -> list[dict]:
         """

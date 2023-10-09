@@ -34,13 +34,13 @@ def bootstrap(default_descriptor: Path) -> dict[str, str]:
                         help="Plotting Behaviour, choice between ask for confirm, skip or plot always", default="ask")
     parser.add_argument("-pr", "--print-result", required=False, help="Print a results' summary on the terminal",
                         action='store_true')
-    parser.add_argument('-ws', '--write-result', required=False, choices=["ask", "skip", "always"],
+    parser.add_argument('-wr', '--write-result', required=False, choices=["ask", "skip", "always"],
                         help="Save the computational result on disk", default="ask")
-    parser.add_argument('-rf', '--result-format', required=False, choices=["json", "csv"],
+    parser.add_argument('-fr', '--format-result', required=False, choices=["json", "csv"],
                         help="Result's format of the 'analyze' computation', CSV or JSON", default="json")
     inputs: dict[str, str] = vars(parser.parse_args())
     settings.execution_mode = inputs["action"]
-    settings.result_format = inputs["result_format"]
+    settings.result_format = inputs["format_result"]
     settings.verbose = inputs["verbose"]
     settings.allow_incompatible = inputs["allow_incompatible"]
     settings.plot = inputs["plot"]
@@ -51,7 +51,7 @@ def bootstrap(default_descriptor: Path) -> dict[str, str]:
     else:
         inputs["schema"] = settings.schema_path
     del inputs["action"]
-    del inputs["result_format"]
+    del inputs["format_result"]
     del inputs["verbose"]
     del inputs["allow_incompatible"]
     del inputs["plot"]
@@ -117,7 +117,7 @@ def ask_confirm(question_text: str) -> bool:
             return False
 
 
-def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, bool]]]) -> None:
+def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, dict[str, bool | str]]]]) -> None:
     """
     This function saves to the disk the analysis's results
     :param target: The solidity source code path
@@ -134,16 +134,21 @@ def save_analysis_results(target: str, results: dict[str, dict[str, dict[str, bo
                 output_fp.write(get_csv_columns() + "\n")
                 for contract_name, contract_results in results.items():
                     tmp: str = f"{target_path.name},{contract_name}"
-                    for _, pattern_design_results in dict(sorted(contract_results.items())).items():
-                        tmp += f",{any(x == True for x in pattern_design_results.values())}"
-                    csv_lines.append(tmp+"\n")
+                    for pattern_design_results in contract_results.values():
+                        for check_results in pattern_design_results.values():
+                            if check_results["result"]:
+                                tmp += f",{check_results['result']},{check_results['line_match']},{check_results['match_statement']}"
+                            else:
+                                tmp += f",{check_results['result']},,"
+                    csv_lines.append(tmp + "\n")
                 output_fp.writelines(csv_lines)
             logging.info("%s '%s'", colored("Results saved to:", "green"), colored(str(output_path), "cyan"))
     except IOError as fp_error:
         logging.error(colored(f"Unable to save results to: '{output_path}'\n{fp_error}", "red"))
 
 
-def save_batch_analysis_results(results_wrapper: dict[str, dict[str, dict[str, dict[str, bool]]]], batch_save_dir: Path) -> None:
+def save_batch_analysis_results(results_wrapper: dict[str, dict[str, dict[str, dict[str, dict[str, bool | str]]]]],
+                                batch_save_dir: Path) -> None:
     """
     This function saves to the disk the batch analysis's results
     :param results_wrapper: A wrapper containing the results of the static analysis indexed by the solidity file path
@@ -162,16 +167,20 @@ def save_batch_analysis_results(results_wrapper: dict[str, dict[str, dict[str, d
                 target_path = Path(target_path)
                 if settings.result_format == "json":
                     output_fp.write(json.dumps({target_path.name: results}))
-                    if _counter < len(results_wrapper)-1:
+                    if _counter < len(results_wrapper) - 1:
                         output_fp.write(",\n")
                         _counter += 1
                 else:
                     csv_lines: list[str] = []
                     for contract_name, contract_results in results.items():
                         tmp: str = f"{target_path.name},{contract_name}"
-                        for _, pattern_design_results in dict(sorted(contract_results.items())).items():
-                            tmp += f",{any(x == True for x in pattern_design_results.values())}"
-                        csv_lines.append(tmp+"\n")
+                        for pattern_design_results in contract_results.values():
+                            for check_results in pattern_design_results.values():
+                                if check_results["result"]:
+                                    tmp += f",{check_results['result']},{check_results['line_match']},{check_results['match_statement']}"
+                                else:
+                                    tmp += f",{check_results['result']},,"
+                    csv_lines.append(tmp + "\n")
                     output_fp.writelines(csv_lines)
             if settings.result_format == "json":
                 output_fp.write("\n]")
@@ -201,7 +210,7 @@ def save_describe_results(target: str, results: dict[str, list[dict]]) -> None:
             logging.error(colored(f"Unable to save descriptor to: '{output_path}'\n{fp_error}", "red"))
 
 
-def terminal_result_formatter(results: dict[str, dict[str, dict[str, bool]]]) -> str:
+def terminal_result_formatter(results: dict[str, dict[str, dict[str, dict[str, bool | str]]]]) -> str:
     """
     Formats the results on the terminal
     :param results: A dictionary containing the results of the static analysis
@@ -211,13 +220,13 @@ def terminal_result_formatter(results: dict[str, dict[str, dict[str, bool]]]) ->
     for smart_contract, descriptors in results.items():
         styled_results = f"{styled_results}{colored('Smart-Contract: ', 'green')}{colored(smart_contract, 'yellow')}\n"
         for descriptor, checks in descriptors.items():
-            passed_tests: int = sum(checks.values())
+            passed_tests: int = sum(check["result"] for check in checks.values())
             styled_results = f'{styled_results}\t{colored("Descriptor: ", "green")}{colored(descriptor, "yellow")}' \
                              f'\n\t\tMay {"be" if passed_tests > 0 else "be not"} used ' \
                              f'({colored(str(passed_tests), "magenta")} checks passed)\n'
-            for check, validated in checks.items():
+            for check, validation in checks.items():
                 styled_results = f"{styled_results}\t\t\tTest '{colored(check, 'yellow')}':\t" \
-                                 f"{colored('passed', 'green') if validated else colored('failed', 'red')}\n"
+                                 f"{colored('passed', 'green') if validation['result'] else colored('failed', 'red')}\n"
     return styled_results
 
 
@@ -228,10 +237,11 @@ def get_csv_columns() -> str:
     """
     if settings.csv_header != "":
         return settings.csv_header
-    descriptors_name: list[str] = [
-        str(descriptor["name"]).replace(" ", "_").lower() for descriptor in settings.descriptors]
     columns: str = "src_file,contract_name"
-    for name in sorted(descriptors_name):
-        columns += f",{name}"
+    for descriptor in settings.descriptors:
+        descriptor_name: str = str(descriptor["name"]).replace(" ", "_").lower()
+        for check in descriptor["checks"]:
+            check_name: str = f"{descriptor_name}_CHECK_{check['check_type']}"
+            columns += f",{check_name},{check_name}_line,{check_name}_match"
     settings.csv_header = columns
     return columns

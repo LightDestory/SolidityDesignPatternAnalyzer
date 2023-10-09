@@ -16,7 +16,7 @@ logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 
 scanner: SolidityScanner
-batch_result_collector: dict[str, dict[str, dict[str, dict[str, bool]]]] = {}
+batch_result_collector: dict[str, dict[str, dict[str, dict[str, dict[str, bool | str]]]]] = {}
 
 
 def execute_analysis(target_path: str) -> None:
@@ -76,7 +76,8 @@ def main() -> None:
             target_directory: Path = Path(inputs["target"])
             for target_file in target_directory.glob("**/*.sol"):
                 execute_analysis(target_path=str(target_file))
-            save_batch_analysis_results(batch_result_collector, target_directory)
+            if settings.execution_mode == "analyze":
+                save_batch_analysis_results(batch_result_collector, target_directory)
     except KeyboardInterrupt:
         logging.info(colored("Execution interrupted by the user!", "red"))
     finally:
