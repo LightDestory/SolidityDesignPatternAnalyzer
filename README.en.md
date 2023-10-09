@@ -89,11 +89,11 @@ To use Analyzer it is necessary to provide a number of parameters, listed here:
 | Parameter | Description |
 | --------- | ---------------------------------------------------------------------------------------------- |
 |`-h, --help` | An optional parameter that, if provided, will cause a guide on how to use it to be printed in the terminal |
-|`-a, --action` | A mandatory parameter that accepts only the values "analyze" and "describe", depending on the operation to be performed. |
+|`-a, --action` | A mandatory parameter that accepts only the values `analyze` and `describe`, depending on the operation to be performed. |
 |`-t, --target` | A mandatory parameter representing the path, absolute or relative, to the file containing some Solidity source code. |
-|`-d, --descriptor` | A mandatory parameter for the "analyze" operation that represents the path, absolute or relative, of the file or folder containing the "Design Pattern Descriptors". If omitted a default path will be used. |
+|`-d, --descriptor` | A mandatory parameter for the `analyze` operation that represents the path, absolute or relative, of the file or folder containing the `Design Pattern Descriptors`. If omitted a default path will be used. |
 |`-v, --verbose` | An optional parameter that, if supplied, will cause debug logs, not normally displayed, to be printed in the terminal. |
-|`-ai, --allow-incompatible` | An optional parameter that, if supplied, will cause the compatibility con- trol of the version of Solidity used in the supplied file to be ignored. |
+|`-ai, --allow-incompatible` | An optional parameter that, if supplied, will cause the compatibility check of the version of Solidity used in the supplied file to be ignored. |
 |`-ap, --auto-plot` | An optional parameter that, if supplied, will make the graph of design pattern search results display au- tomatically. |
 
 For example, wanting to analyze a smart-contract in order to detect the use of the Ownership pattern, it is necessary to execute the command:
