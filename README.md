@@ -3,7 +3,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/LightDestory/SolidityDesignPatternAnalyzer">
-    <img src="thesis_document/components/images/analyzer-tooltip.png" alt="Preview">
+    <img src=".github/assets/images/preview.png" alt="Preview">
   </a>
 <h3 align="center">Solidity Design Pattern Analyzer</h3>
 
@@ -21,6 +21,7 @@
 <details>
   <summary>Tabella dei Contenuti</summary>
   <ol>
+  <li><a href="#avviso">Avviso</a></li>
     <li>
       <a href="#informazioni-sul-progetto">Informazioni sul Progetto</a>
       <ul>
@@ -39,6 +40,11 @@
   </ol>
 </details>
 
+## Avviso
+
+_Successivamente alla laurea, il progetto ha subito cambiamente e miglioramenti, perciò quanto descritto nell'elaborato della tesi potrebbe non rispecchiare più attendibile._
+
+__Per visionare il progetto nella forma descritta nell'elaborato della tesi e la tesi stessa, fare riferimento al branch `frozen`, <a href="[#readme-top](https://github.com/LightDestory/SolidityDesignPatternAnalyzer/tree/frozen)">clicca qui</a>.__
 
 ## Informazioni sul Progetto
 
@@ -86,18 +92,21 @@ Per installare le dipendeze puoi usare il package installer di python denominato
 Per utilizzare Analyzer e necessario fornire una serie di parametri, qui elencati:
 | Parametro | Descrizione |
 | --------- | ---------------------------------------------------------------------------------------------- |
-|`-h, --help` | Un  parametro opzionale che, se fornito, fara stampare una guida sull’utilizzo nel terminale |
-|`-a, --action` | Un  parametro obbligatorio che accetta soltanto i valori ”analyze” e ”describe”, a seconda dell’operazione che si vuole eseguire. |
-|`-t, --target` | Un  parametro obbligatorio che rappresenta la path, assoluta o relativa, del file contenente del codice sorgente Solidity. |
-|`-d, --descriptor` | Un  parametro obbligatorio per l’operazione ”analyze” che rappresenta la path, assoluta o relativa, del file o cartella contenente i ”Design Pattern Descriptor”. Se omesso verrausato un path predefinito. |
-|`-v, --verbose` | Un  parametro opzionale che, se fornito, fara stampare nel terminale i log di debug, normalmente non visualizzati. |
-|`-ai, --allow-incompatible` | Un  parametro opzionale che, se fornito, fara ignorare il con- trollo di compatibilita della versione di Solidity utilizzata nel file fornito. |
-|`-ap, --auto-plot` | Un  parametro opzionale che, se fornito, fara visualizzare au- tomaticamente il grafico dei risultati della ricerca dei design pattern. |
+|`-h, --help` | Un parametro opzionale che, se fornito, fara stampare una guida sull’utilizzo nel terminale |
+|`-a, --action` | Un parametro obbligatorio che accetta soltanto i valori `analyze` e `describe`, a seconda dell’operazione che si vuole eseguire. |
+|`-t, --target` | Un parametro obbligatorio che rappresenta la path, assoluta o relativa, del file o cartella contenente del codice sorgente Solidity. <br> Nel caso venga fornita una directory verrà eseguità la `modalità batch` che salverà tutti i risultati ottenuti in un'unico file. |
+|`-d, --descriptor` | Un parametro opzionale per l’operazione `analyze` che rappresenta la path, assoluta o relativa, del file o cartella contenente i `Design Pattern Descriptor`. <br> Se omesso verra usato un path predefinito. |
+|`-v, --verbose` | Un parametro opzionale che, se fornito, fara stampare nel terminale i log di debug, normalmente non visualizzati. |
+|`-ai, --allow-incompatible` | Un parametro opzionale che determina il controllo di compatibilita della versione di Solidity utilizzata nel file fornito. <br> Accetta come valori: `ask`, `skip`, `always`. <br> Default: `ask`, chiede conferma. |
+|`-p, --plot` | Un parametro opzionale che determina la visualizzazione di un grafico riassuntivo. <br> Accetta come valori: `ask`, `skip`, `always`. <br> Default: `ask`, chiede conferma. |
+|`-pr, --print-result` | Un parametro opzionale che, se fornito, farà stampare sul terminale un riassunto dei risultati ottenuti dall'analisi. |
+|`-wr, --write-result` | Un parametro opzionale che determina il salvataggio su disco dei risultati ottenuti dall'analisi dei singoli file. <br> Accetta come valori: `ask`, `skip`, `always`. <br> Default: `ask`, chiede conferma. |
+|`-fr, --format-result` | Un parametro opzionale che determina il formato con cui i dati ottenuti vengono salvati. <br> Accetta come valori: `json`, `csv`. <br> Default: `json`. |
 
 Per esempio, volendo analizzare uno smart-contract al fine di individuare l’utilizzo dell’Ownership pattern e necessario eseguire il comando:
 
   ```sh
-  python analyzer.py -a analyze -t ./source_code.sol -d ./Ownership_descriptor.json
+  python analyzer.py -a analyze -t ./source_code.sol -d ./Ownership_descriptor.json --print-result --write-result always --plot always
   ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

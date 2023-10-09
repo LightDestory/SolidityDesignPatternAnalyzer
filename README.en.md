@@ -3,7 +3,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/LightDestory/SolidityDesignPatternAnalyzer">
-    <img src="thesis_document/components/images/analyzer-tooltip.png" alt="Preview">
+    <img src=".github/assets/images/preview.png" alt="Preview">
   </a>
 <h3 align="center">Solidity Design Pattern Analyzer</h3>
 
@@ -21,6 +21,7 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
+  <li><a href="#warning">Warning</a></li>
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
@@ -39,9 +40,12 @@
   </ol>
 </details>
 
+## Warning
 
+_Since graduation, the project has undergone changes and improvements, so what is described in the thesis paper may no longer be accurate._
 
-<!-- ABOUT THE PROJECT -->
+__To view the project in the form described in the thesis paper and the thesis itself, refer to the branch `frozen`, <a href="[#readme-top](https://github.com/LightDestory/SolidityDesignPatternAnalyzer/tree/frozen)">click here</a>.__
+
 ## About The Project
 
 Solidity Design Pattern Analyzer is a software application developed for my thesis for the Bachelor's Degree in Computer Science at the University of Catania.
@@ -88,18 +92,21 @@ To install dependencies you must use python's package installer named _pip_:
 To use Analyzer it is necessary to provide a number of parameters, listed here:
 | Parameter | Description |
 | --------- | ---------------------------------------------------------------------------------------------- |
-|`-h, --help` | An optional parameter that, if provided, will cause a guide on how to use it to be printed in the terminal |
-|`-a, --action` | A mandatory parameter that accepts only the values "analyze" and "describe", depending on the operation to be performed. |
-|`-t, --target` | A mandatory parameter representing the path, absolute or relative, to the file containing some Solidity source code. |
-|`-d, --descriptor` | A mandatory parameter for the "analyze" operation that represents the path, absolute or relative, of the file or folder containing the "Design Pattern Descriptors". If omitted a default path will be used. |
-|`-v, --verbose` | An optional parameter that, if supplied, will cause debug logs, not normally displayed, to be printed in the terminal. |
-|`-ai, --allow-incompatible` | An optional parameter that, if supplied, will cause the compatibility con- trol of the version of Solidity used in the supplied file to be ignored. |
-|`-ap, --auto-plot` | An optional parameter that, if supplied, will make the graph of design pattern search results display au- tomatically. |
+|`-h, --help` | An optional parameter that, if provided, will cause a guide on usage to be printed in the terminal |
+|`-a, --action` | A mandatory parameter that accepts only the values `analyze` and `describe`, depending on the operation to be performed. |
+|`-t, --target` | A mandatory parameter representing the path, absolute or relative, of the file or directory containing some Solidity source code. <br> In case a directory is provided the `batch mode` will be executed which will save all the results obtained in a single file. |
+|`-d, --descriptor` | An optional parameter for the `analyze` operation representing the path, absolute or relative, to the file or folder containing the `Design Pattern Descriptors`. <br> If omitted a default path will be used. |
+|`-v, --verbose` | An optional parameter that, if provided, will cause debug logs, normally not displayed, to be printed in the terminal. |
+|`-ai, --allow-incompatible` | An optional parameter that determines the compatibility check of the version of Solidity used in the provided file. <br> Accepts as values: `ask`, `skip`, `always`. <br> Default: `ask`, asks for confirmation. |
+|`-p, --plot` | An optional parameter that determines the display of a summary graph. <br> Accepts as values: `ask`, `skip`, `always`. <br> Default: `ask`, asks for confirmation. |
+|`-pr, --print-result` | An optional parameter that, if provided, will cause a summary of the results obtained from the analysis to be printed on the terminal. |
+|`-wr, --write-result` | An optional parameter that determines whether the results obtained from the analysis of individual files are saved to disk. <br> Accepts as values: `ask`, `skip`, `always`. <br> Default: `ask`, asks for confirmation. |
+|`-fr, --format-result` | An optional parameter that determines the format with which the obtained data is saved. <br> Accepts as values: `json`, `csv`. <br> Default: `json`. |
 
 For example, wanting to analyze a smart-contract in order to detect the use of the Ownership pattern, it is necessary to execute the command:
 
   ```sh
-  python analyzer.py -a analyze -t ./source_code.sol -d ./Ownership_descriptor.json
+  python analyzer.py -a analyze -t ./source_code.sol -d ./Ownership_descriptor.json --print-result --write-result always --plot always
   ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
