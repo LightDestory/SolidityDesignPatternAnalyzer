@@ -86,13 +86,13 @@ Per installare le dipendeze puoi usare il package installer di python denominato
 Per utilizzare Analyzer e necessario fornire una serie di parametri, qui elencati:
 | Parametro | Descrizione |
 | --------- | ---------------------------------------------------------------------------------------------- |
-|`-h, --help` | Un  parametro opzionale che, se fornito, fara stampare una guida sull’utilizzo nel terminale |
-|`-a, --action` | Un  parametro obbligatorio che accetta soltanto i valori ”analyze” e ”describe”, a seconda dell’operazione che si vuole eseguire. |
-|`-t, --target` | Un  parametro obbligatorio che rappresenta la path, assoluta o relativa, del file contenente del codice sorgente Solidity. |
-|`-d, --descriptor` | Un  parametro obbligatorio per l’operazione ”analyze” che rappresenta la path, assoluta o relativa, del file o cartella contenente i ”Design Pattern Descriptor”. Se omesso verrausato un path predefinito. |
-|`-v, --verbose` | Un  parametro opzionale che, se fornito, fara stampare nel terminale i log di debug, normalmente non visualizzati. |
-|`-ai, --allow-incompatible` | Un  parametro opzionale che, se fornito, fara ignorare il con- trollo di compatibilita della versione di Solidity utilizzata nel file fornito. |
-|`-ap, --auto-plot` | Un  parametro opzionale che, se fornito, fara visualizzare au- tomaticamente il grafico dei risultati della ricerca dei design pattern. |
+|`-h, --help` | Un parametro opzionale che, se fornito, fara stampare una guida sull’utilizzo nel terminale |
+|`-a, --action` | Un parametro obbligatorio che accetta soltanto i valori ”analyze” e ”describe”, a seconda dell’operazione che si vuole eseguire. |
+|`-t, --target` | Un parametro obbligatorio che rappresenta la path, assoluta o relativa, del file contenente del codice sorgente Solidity. |
+|`-d, --descriptor` | Un parametro obbligatorio per l’operazione ”analyze” che rappresenta la path, assoluta o relativa, del file o cartella contenente i ”Design Pattern Descriptor”. Se omesso verrà usato un path predefinito. |
+|`-v, --verbose` | Un parametro opzionale che, se fornito, fara stampare nel terminale i log di debug, normalmente non visualizzati. |
+|`-ai, --allow-incompatible` | Un parametro opzionale che, se fornito, fara ignorare il controllo di compatibilita della versione di Solidity utilizzata nel file fornito. |
+|`-ap, --auto-plot` | Un parametro opzionale che, se fornito, fara visualizzare automaticamente il grafico dei risultati della ricerca dei design pattern. |
 
 Per esempio, volendo analizzare uno smart-contract al fine di individuare l’utilizzo dell’Ownership pattern e necessario eseguire il comando:
 
