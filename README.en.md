@@ -44,7 +44,7 @@
 
 _Since graduation, the project has undergone changes and improvements, so what is described in the thesis paper may no longer be accurate._
 
-__To view the project in the form described in the thesis paper and the thesis itself, refer to the branch `frozen`, <a href="[#readme-top](https://github.com/LightDestory/SolidityDesignPatternAnalyzer/tree/frozen)">click here</a>.__
+__To view the project in the form described in the thesis paper and the thesis itself, refer to the branch `frozen`,__ <a href="https://github.com/LightDestory/SolidityDesignPatternAnalyzer/tree/frozen">click here</a> .
 
 ## About The Project
 

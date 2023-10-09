@@ -44,7 +44,7 @@
 
 _Successivamente alla laurea, il progetto ha subito cambiamente e miglioramenti, perciò quanto descritto nell'elaborato della tesi potrebbe non rispecchiare più attendibile._
 
-__Per visionare il progetto nella forma descritta nell'elaborato della tesi e la tesi stessa, fare riferimento al branch `frozen`, <a href="[#readme-top](https://github.com/LightDestory/SolidityDesignPatternAnalyzer/tree/frozen)">clicca qui</a>.__
+__Per visionare il progetto nella forma descritta nell'elaborato della tesi e la tesi stessa, fare riferimento al branch `frozen`,__ <a href="https://github.com/LightDestory/SolidityDesignPatternAnalyzer/tree/frozen">clicca qui</a> .
 
 ## Informazioni sul Progetto
 
