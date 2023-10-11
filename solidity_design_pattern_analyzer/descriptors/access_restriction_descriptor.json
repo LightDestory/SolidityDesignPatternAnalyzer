@@ -3,7 +3,7 @@
     "checks": [
         {
             "check_type": "inheritance",
-            "parent_names": ["AccessRestriction", "restrictable*"]
+            "parent_names": ["AccessRestriction", "restrictable*", "Pausable"]
         },
         {
             "check_type": "modifier",

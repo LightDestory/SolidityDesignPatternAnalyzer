@@ -9,7 +9,7 @@ from .solidity_parser.parser import ObjectifyContractVisitor
 class SourceUnitExplorer:
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
-        "BooleanLiteral", "UserDefinedTypeName", "HexLiteral", "IndexAccess"
+        "BooleanLiteral", "UserDefinedTypeName", "HexLiteral", "IndexAccess", "HexNumber", "DecimalNumber", "hexLiteral", "StringLiteral"
     ]
 
     _fixed_data_type_byte_sizes: dict[str, int] = {
@@ -30,6 +30,8 @@ class SourceUnitExplorer:
             logging.debug(colored(f"Collecting statements...", "magenta"))
         collector: dict[str, dict[str, list[dict]]] = {"functions": {}, "modifiers": {}}
         for fn_name, fn_node in smart_contract_node.functions.items():
+            if "function()" in fn_name:
+                fn_name = "fallback"
             if not fn_node._node.body:
                 continue
             collector["functions"][fn_name.lower()] = fn_node._node.body.statements
@@ -62,7 +64,9 @@ class SourceUnitExplorer:
         """
         mappings: dict[str, dict[str, str]] = {}
         for var_name, var_node in smart_contract_node.stateVars.items():
-            if "type" in var_node["typeName"] and var_node["typeName"]["type"] == "Mapping" and var_name.lower() not in mappings:
+            if "type" in var_node["typeName"] and var_node["typeName"][
+                "type"] == "Mapping" and var_name.lower() not in mappings:
+                mappings[var_name.lower()] = {}
                 mappings[var_name.lower()]["visibility"] = var_node["visibility"]
                 mappings[var_name.lower()]["loc"] = var_node.loc["start"]["line"]
         return mappings
@@ -105,6 +109,8 @@ class SourceUnitExplorer:
         smart_contract_functions: dict[str, str] = {}
         for fn_name, fn_body in smart_contract_node.functions.items():
             name: str = fn_name.lower()
+            if "function()" in fn_name:
+                name = "fallback"
             if name not in smart_contract_functions:
                 smart_contract_functions[name] = fn_body._node.loc["start"]["line"]
         return smart_contract_functions
@@ -169,7 +175,8 @@ class SourceUnitExplorer:
                 return_parameters[function] = parameters
         return return_parameters
 
-    def get_all_statements(self, smart_contract_definitions: dict[str, dict[str, list[dict]]], type_filter: str = "") -> list[dict]:
+    def get_all_statements(self, smart_contract_definitions: dict[str, dict[str, list[dict]]], type_filter: str = "") -> \
+            list[dict]:
         """
         This function retrieves all the statements of a specific smart-contract
         :param smart_contract_definitions: The definitions of the smart-contract to analyze
@@ -261,7 +268,8 @@ class SourceUnitExplorer:
                     collector += self.find_node_by_type(statement, type_filter)
                 return collector
             case "VariableDeclarationStatement":
-                return self.find_node_by_type(node["initialValue"], type_filter)
+                return self.find_node_by_type(node["initialValue"], type_filter) + self.find_node_by_type(
+                    node["variables"], type_filter)
             case "BinaryOperation":
                 return self.find_node_by_type(node["left"], type_filter) + \
                     self.find_node_by_type(node["right"], type_filter)
@@ -272,8 +280,39 @@ class SourceUnitExplorer:
             case "UncheckedStatement":
                 return self.find_node_by_type(node['body'], type_filter)
             case _ if node_type in ["ContinueStatement", "BreakStatement", "NewExpression",
-                                    "TupleExpression"] + self._statement_operand_types:
+                                    "TupleExpression", "ThrowStatement"] + self._statement_operand_types:
                 return []
+            case "InLineAssemblyStatement":
+                return self.find_node_by_type(node["body"], type_filter)
+            case "AssemblyBlock":
+                operations = node["operations"]
+                collector: list[dict] = list()
+                for op in operations:
+                    collector += self.find_node_by_type(op, type_filter)
+                return collector
+            case "AssemblyAssignment" | "AssemblyLocalDefinition":
+                names = node["names"]
+                name_collector: list[dict] = list()
+                for name in names:
+                    name_collector += self.find_node_by_type(name, type_filter)
+                return name_collector + self.find_node_by_type(node["expression"], type_filter)
+            case "AssemblyExpression":
+                args = node["arguments"]
+                arg_collector: list[dict] = list()
+                for arg in args:
+                    arg_collector += self.find_node_by_type(arg, type_filter)
+                return arg_collector
+            case "AssemblyIf":
+                return self.find_node_by_type(node["condition"], type_filter) + \
+                    self.find_node_by_type(node["body"], type_filter)
+            case "AssemblySwitch":
+                cases = node["cases"]
+                cases_collector: list[dict] = list()
+                for case in cases:
+                    cases_collector += self.find_node_by_type(case, type_filter)
+                return self.find_node_by_type(node["expression"], type_filter) + cases_collector
+            case "AssemblyCase":
+                return self.find_node_by_type(node["block"], type_filter)
             case _:
                 pprint.pprint(node)
                 raise ValueError(f"Unknown navigation route for {node_type}")
@@ -339,8 +378,10 @@ class SourceUnitExplorer:
                 if wrapped_operand["subdenomination"]:
                     value += f" {wrapped_operand['subdenomination']}"
                 return value
-            case "stringLiteral" | "BooleanLiteral" | "HexLiteral":
-                return f"\"{wrapped_operand['value']}\""
+            case "stringLiteral" | "StringLiteral":
+                return f"'{wrapped_operand['value']}'"
+            case "BooleanLiteral" | "DecimalNumber" | "hexLiteral" | "HexNumber" | "BooleanLiteral" | "HexLiteral":
+                return str(wrapped_operand["value"])
             case "ArrayTypeName":
                 length: str = str(wrapped_operand["length"]) if wrapped_operand["length"] else ""
                 return f"{self.build_node_string(wrapped_operand['baseTypeName'])}[{length}]"
@@ -359,10 +400,13 @@ class SourceUnitExplorer:
         :param node: The node to analyze
         :return: A stringed node
         """
+        if not node:
+            logging.warning(colored("None node converted to _", "red"))
+            return "_"
         node_type: str = node["type"] if "type" in node else ""
         match node_type:
             case "ReturnStatement":
-                return f"return {self.build_node_string(node['expression'])}"
+                return f"return {self.build_node_string(node['expression']) if node['expression'] else ''}"
             case "EmitStatement":
                 return f"emit {self.build_node_string(node['eventCall'])}"
             case "ExpressionStatement":
@@ -379,6 +423,8 @@ class SourceUnitExplorer:
                 return self.get_statement_operand(node)
             case "VariableDeclarationStatement":
                 return self.build_variable_declaration_statement_string(node)
+            case "VariableDeclaration":
+                return self.build_variable_declaration_string(node)
             case "IfStatement":
                 return self.build_if_statement_string(node)
             case "WhileStatement" | "DoWhileStatement":
@@ -397,10 +443,33 @@ class SourceUnitExplorer:
                 return "break"
             case "ContinueStatement":
                 return "continue"
+            case "ThrowStatement":
+                return "throw"
             case "RevertStatement":
                 return f"revert {self.build_node_string(node['functionCall'])}"
             case "UncheckedStatement":
                 return f"unchecked {self.build_node_string(node['body'])}"
+            case "InLineAssemblyStatement":
+                return f"assembly {self.build_node_string(node['body'])}"
+            case "AssemblyBlock":
+                return f"{{{self.build_assembly_block_string(node)}}}"
+            case "AssemblyAssignment" | "AssemblyLocalDefinition":
+                return self.build_assembly_assignment_string(node)
+            case "AssemblyExpression":
+                arguments: list[str] = [self.build_node_string(arg) for arg in node["arguments"]]
+                result: str = f"{node['functionName']}"
+                result += f"({','.join(arguments)})" if arguments else ""
+                return result
+            case "AssemblyIf":
+                return self.build_assembly_if_string(node)
+            case "AssemblySwitch":
+                return self.build_assembly_switch_string(node)
+            case "AssemblyCase":
+                return self.build_assembly_case_string(node)
+            case "AssemblyFor":
+                return self.build_assembly_for_string(node)
+            case "FunctionTypeName":
+                return self.build_function_type_name_string(node)
             case _:
                 pprint.pprint(node)
                 raise ValueError(f"Unable to decode the statement: {node_type}")
@@ -411,42 +480,44 @@ class SourceUnitExplorer:
         :param call_node: The call node to analyze
         :return: A stringed function call
         """
-        function_name: str
         if "name" in call_node:
-            function_name = call_node['name']
+            function_name: str = call_node['name']
         elif type(call_node["expression"]) == str:
-            function_name = call_node["expression"]
+            function_name: str = call_node["expression"]
         else:
-            function_name = self.build_node_string(call_node["expression"])
-        function_call: str = f"{function_name}("
-        arguments: list[dict] = call_node['arguments']
-        for index, argument in enumerate(arguments):
-            function_call += f"{self.build_node_string(argument)}"
-            if index < len(arguments) - 1:
-                function_call += ", "
-        function_call += ")"
-        return function_call
+            function_name: str = self.build_node_string(call_node["expression"])
+        arguments: list[str] = [self.build_node_string(argument) for argument in call_node['arguments']]
+        return f"{function_name}({','.join(arguments)})"
 
-    def build_variable_declaration_statement_string(self, declaration_node: dict) -> str:
+    def build_variable_declaration_statement_string(self, declaration_statement_node: dict) -> str:
         """
         This function recursively inspects a variable declaration to string it
-        :param declaration_node: The variable declaration node to analyze
+        :param declaration_statement_node: The variable declaration statement node to analyze
         :return: A stringed variable declaration
         """
-        variables: list[dict] = declaration_node["variables"]
-        declaration_text: str = "(" if len(variables) > 1 else ""
+        variables: list[str] = [self.build_node_string(variable) if variable else " "
+                                for variable in declaration_statement_node["variables"]]
+        declaration_text: str = f"{','.join(variables)}"
         initialization_text: str = ""
-        for index, variable in enumerate(variables):
-            if not variable:
-                continue
-            storage_location: str = f" {variable['storageLocation']} " if variable["storageLocation"] else " "
-            declaration_text += f"{self.build_node_string(variable['typeName'])}{storage_location}{variable['name']}"
-            if index < len(variables) - 1:
-                declaration_text += ", "
-        declaration_text += ")" if len(variables) > 1 else ""
-        if declaration_node['initialValue']:
-            initialization_text = f" = {self.build_node_string(declaration_node['initialValue'])}"
+        if len(variables) > 1:
+            declaration_text = f"({declaration_text})"
+        if declaration_statement_node['initialValue']:
+            initialization_text = f" = {self.build_node_string(declaration_statement_node['initialValue'])}"
         return f"{declaration_text}{initialization_text}"
+
+    def build_variable_declaration_string(self, variable_node: dict) -> str:
+        """
+        This function recursively inspects a variable declaration to string it
+        :param variable_node: The variable declaration node to analyze
+        :return: A stringed variable declaration
+        """
+        storage_location: str = f"{variable_node['storageLocation']} " if ("storageLocation" in variable_node
+                                                                           and variable_node["storageLocation"]) else ""
+        type_name: str = ""
+        if "typeName" in variable_node and variable_node["typeName"]:
+            type_name = f"{self.build_node_string(variable_node['typeName'])} "
+        name: str = variable_node["name"] if "name" in variable_node and variable_node["name"] else ""
+        return f"{storage_location}{type_name}{name}"
 
     def build_if_statement_string(self, if_statement_node: dict) -> str:
         """
@@ -455,11 +526,10 @@ class SourceUnitExplorer:
         :return: A stringed if statement
         """
         condition_text: str = self.build_node_string(if_statement_node["condition"])
-        true_body: str = self.build_node_string(if_statement_node["TrueBody"])
-        false_body: str = ""
-        if if_statement_node["FalseBody"]:
-            false_body: str = f"else {self.build_node_string(if_statement_node['FalseBody'])}"
-        return f"if {condition_text} {true_body} {false_body}"
+        true_body: str = self.build_node_string(if_statement_node["TrueBody"]) if if_statement_node["TrueBody"] else ""
+        false_body: str = f"else {self.build_node_string(if_statement_node['FalseBody'])}" if if_statement_node[
+            'FalseBody'] else ""
+        return f"if ({condition_text}) {true_body} {false_body}"
 
     def build_while_loop_string(self, while_node: dict) -> str:
         """
@@ -481,9 +551,9 @@ class SourceUnitExplorer:
         :param for_node: The for node to analyze
         :return: A stringed for loop
         """
-        init_condition: str = self.build_node_string(for_node["initExpression"])
+        init_condition: str = self.build_node_string(for_node["initExpression"]) if for_node["initExpression"] else ""
         condition_expression: str = self.build_node_string(for_node["conditionExpression"])
-        loop_expression: str = self.build_node_string(for_node["loopExpression"])
+        loop_expression: str = self.build_node_string(for_node["loopExpression"]) if for_node["loopExpression"] else ""
         return f"for({init_condition}; {condition_expression}; {loop_expression}) {self.build_node_string(for_node['body'])}"
 
     def build_block_string(self, block_node: dict) -> str:
@@ -492,11 +562,86 @@ class SourceUnitExplorer:
         :param block_node: The block of statements to analyze
         :return: A stringed block of statements
         """
-        statements: list[dict] = block_node["statements"]
-        statements_text = ""
-        for statement in statements:
-            statements_text += f"{self.build_node_string(statement)}; "
-        return statements_text
+        statements_text: list[str] = [self.build_node_string(statement) for statement in block_node["statements"]]
+        return f"{'; '.join(statements_text)}"
+
+    def build_assembly_block_string(self, assembly_block_node: dict) -> str:
+        """
+        This function recursively inspects an assembly block of operations to string it
+        :param assembly_block_node: The assembly block of operations to analyze
+        :return: A stringed assembly block of operations
+        """
+        operations_text: list[str] = [self.build_node_string(operation)
+                                      for operation in assembly_block_node["operations"]]
+        return f"{' '.join(operations_text)}"
+
+    def build_assembly_assignment_string(self, assembly_assignment_node: dict) -> str:
+        """
+        This function recursively inspects an assembly assignment to string it
+        :param assembly_assignment_node: The assembly assignment to analyze
+        :return: A stringed assembly assignment
+        """
+        prefix: str = "let " if assembly_assignment_node["type"] == "AssemblyLocalDefinition" else ""
+        names: list[str] = [self.build_node_string(k) for k in assembly_assignment_node["names"]]
+        return f"{prefix + ','.join(names)} := {self.build_node_string(assembly_assignment_node['expression'])}"
+
+    def build_assembly_if_string(self, assembly_if_node: dict) -> str:
+        """
+        This function recursively inspects an assembly if to string it
+        :param assembly_if_node: The assembly if to analyze
+        :return: A stringed assembly if
+        """
+        condition: str = self.build_node_string(assembly_if_node["condition"])
+        body: str = self.build_node_string(assembly_if_node["body"])
+        return f"if {condition} {body}"
+
+    def build_assembly_switch_string(self, assembly_switch_node: dict) -> str:
+        """
+        This function recursively inspects an assembly switch to string it
+        :param assembly_switch_node: The assembly switch to analyze
+        :return: A stringed assembly switch
+        """
+        expression: str = self.build_node_string(assembly_switch_node["expression"])
+        cases: list[str] = [self.build_node_string(case) for case in assembly_switch_node["cases"]]
+        return f"switch {expression} {' '.join(cases)}"
+
+    def build_assembly_case_string(self, assembly_case_node: dict) -> str:
+        """
+        This function recursively inspects an assembly case to string it
+        :param assembly_case_node: The assembly case to analyze
+        :return: A stringed assembly case
+        """
+        if "default" in assembly_case_node and assembly_case_node["default"]:
+            prefix: str = "default "
+        else:
+            prefix: str = f"case {self.build_node_string(assembly_case_node['value'])} "
+        return f"{prefix} {self.build_node_string(assembly_case_node['block'])}"
+
+    def build_assembly_for_string(self, assembly_for_node: dict) -> str:
+        """
+        This function recursively inspects an assembly for to string it
+        :param assembly_for_node: The assembly for to analyze
+        :return: A stringed assembly for
+        """
+        pre: str = self.build_node_string(assembly_for_node["pre"])
+        condition: str = self.build_node_string(assembly_for_node["condition"])
+        post: str = self.build_node_string(assembly_for_node["post"])
+        body: str = self.build_node_string(assembly_for_node["body"])
+        return f"for {pre} {condition} {post} {body}"
+
+    def build_function_type_name_string(self, function_type_name_node: dict) -> str:
+        """
+        This function recursively inspects a function type name to string it
+        :param function_type_name_node: The function type name to analyze
+        :return: A stringed function type name
+        """
+        returns_type: list[str] = [self.build_node_string(return_type) for return_type in
+                                   function_type_name_node["returnTypes"]]
+        parameter_types: list[str] = [self.build_node_string(parameter) for parameter in
+                                      function_type_name_node["parameterTypes"]]
+        stateMutability: str = function_type_name_node[
+            "stateMutability"] if "stateMutability" in function_type_name_node else ""
+        return f"function ({','.join(parameter_types)}) {stateMutability} returns ({','.join(returns_type)})"
 
     def build_tuple_string(self, tuple_node: dict) -> str:
         """
@@ -504,11 +649,6 @@ class SourceUnitExplorer:
         :param tuple_node: The tuple node to analyze
         :return: A stringed tuple
         """
-        components: list[dict] = tuple_node["components"]
-        declaration_text: str = "("
-        for index, component in enumerate(components):
-            declaration_text += f"{self.build_node_string(component)}"
-            if index < len(components) - 1:
-                declaration_text += ", "
-        declaration_text += ")"
-        return declaration_text
+        components_to_text: list[str] = [self.build_node_string(component) if component else " "
+                                         for component in tuple_node["components"]]
+        return f"({','.join(components_to_text)})"
