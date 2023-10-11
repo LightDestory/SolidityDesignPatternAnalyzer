@@ -38,6 +38,8 @@ def bootstrap(default_descriptor: Path) -> dict[str, str]:
                         help="Save the computational result on disk", default="ask")
     parser.add_argument('-fr', '--format-result', required=False, choices=["json", "csv"],
                         help="Result's format of the 'analyze' computation', CSV or JSON", default="json")
+    parser.add_argument("--debug-analysis", required=False, help="Execute an debug analysis of the target",
+                        action='store_true')
     inputs: dict[str, str] = vars(parser.parse_args())
     settings.execution_mode = inputs["action"]
     settings.result_format = inputs["format_result"]
@@ -46,6 +48,9 @@ def bootstrap(default_descriptor: Path) -> dict[str, str]:
     settings.plot = inputs["plot"]
     settings.print_result = inputs["print_result"]
     settings.write_result = inputs["write_result"]
+    if inputs["debug_analysis"]:
+        settings.execution_mode = "debug"
+        settings.verbose = True
     if inputs["action"] == "describe":
         del inputs["descriptor"]
     else:
@@ -57,6 +62,7 @@ def bootstrap(default_descriptor: Path) -> dict[str, str]:
     del inputs["plot"]
     del inputs["print_result"]
     del inputs["write_result"]
+    del inputs["debug_analysis"]
     if not is_input_valid(inputs):
         exit(-1)
     return inputs

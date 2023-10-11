@@ -17,9 +17,15 @@ logging.getLogger("PIL.PngImagePlugin").setLevel(logging.CRITICAL)
 
 scanner: SolidityScanner
 batch_result_collector: dict[str, dict[str, dict[str, dict[str, dict[str, bool | str]]]]] = {}
+execution_callable: callable
 
 
 def execute_analysis(target_path: str) -> None:
+    """
+    Execute an analysis on the given solidity file
+    :param target_path: The path of the solidity file to analyze
+    :return: None
+    """
     logging.info("%s '%s'", colored("Parsing solidity file: ", "yellow"), colored(target_path, "cyan"))
     if not scanner.parse_solidity_file(solidity_file_path=target_path):
         return
@@ -54,11 +60,30 @@ def execute_analysis(target_path: str) -> None:
         save_describe_results(target_path, computation_results)
 
 
+def execute_debug_analysis(target_path: str) -> None:
+    """
+    Execute a debug analysis on the given solidity file by exploring the AST and printing the findings
+    :param target_path: The path of the solidity file to analyze
+    :return: None
+    """
+    logging.info("%s '%s'", colored("Parsing solidity file: ", "green"), colored(target_path, "cyan"))
+    if not scanner.parse_solidity_file(solidity_file_path=target_path):
+        return
+    scanner.debug_analysis()
+
+
 def main() -> None:
-    global scanner
+    """
+    Entry point of the program
+    :return: None
+    """
+    global scanner, execution_callable
+    execution_callable = execute_analysis
     current_dir: Path = Path(__file__).parent
     settings.schema_path = f"{current_dir}{settings.schema_path}"
     inputs: dict[str, str] = bootstrap(default_descriptor=Path(f"{current_dir}/descriptors/"))
+    if settings.execution_mode == "debug":
+        execution_callable = execute_debug_analysis
     if settings.execution_mode == "analyze":
         desc_validator = DescriptorValidator(inputs["descriptor"])
         logging.info(colored("Loading schema...", "yellow"))
@@ -71,11 +96,11 @@ def main() -> None:
     scanner = SolidityScanner()
     try:
         if not settings.batch_mode:
-            execute_analysis(target_path=inputs["target"])
+            execution_callable(target_path=inputs["target"])
         else:
             target_directory: Path = Path(inputs["target"])
             for target_file in target_directory.glob("**/*.sol"):
-                execute_analysis(target_path=str(target_file))
+                execution_callable(target_path=str(target_file))
             if settings.execution_mode == "analyze":
                 save_batch_analysis_results(batch_result_collector, target_directory)
     except KeyboardInterrupt:

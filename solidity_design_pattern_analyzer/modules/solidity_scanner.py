@@ -612,3 +612,19 @@ class SolidityScanner:
                 }
                 results.append(test_result)
         return results
+
+    # === DEBUG ANALYSIS ===
+
+    def debug_analysis(self) -> None:
+        for contract in self._visitor.contracts.keys():
+            node = self._visitor.contracts[contract]
+            logging.info("%s '%s'", colored("Parsing contract: ", "yellow"), colored(contract, "cyan"))
+            defs = self._source_unit_explorer.collect_definitions(node)
+            logging.info("%s '%s'", colored("BaseContracts: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_base_contract_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Mappings: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_all_mapping_state_vars(node)), "cyan"))
+            logging.info("%s '%s'", colored("BoolStates: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_all_bool_state_vars(node)), "cyan"))
+            logging.info("%s '%s'", colored("Modifiers: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_modifier_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("FNs: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_fn_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Events: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_event_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Enums: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_enum_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("All FN's RTNP: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_all_fn_return_parameters(node)), "cyan"))

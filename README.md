@@ -102,6 +102,7 @@ Per utilizzare Analyzer e necessario fornire una serie di parametri, qui elencat
 |`-pr, --print-result` | Un parametro opzionale che, se fornito, farà stampare sul terminale un riassunto dei risultati ottenuti dall'analisi. |
 |`-wr, --write-result` | Un parametro opzionale che determina il salvataggio su disco dei risultati ottenuti dall'analisi dei singoli file. <br> Accetta come valori: `ask`, `skip`, `always`. <br> Default: `ask`, chiede conferma. |
 |`-fr, --format-result` | Un parametro opzionale che determina il formato con cui i dati ottenuti vengono salvati. <br> Accetta come valori: `json`, `csv`. <br> Default: `json`. |
+|`--debug-analysis` | Un parametro opzionale che, se fornito, farà eseguire un analisi di debug sull'AST. |
 
 Per esempio, volendo analizzare uno smart-contract al fine di individuare l’utilizzo dell’Ownership pattern e necessario eseguire il comando:
 

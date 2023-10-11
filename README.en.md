@@ -102,6 +102,7 @@ To use Analyzer it is necessary to provide a number of parameters, listed here:
 |`-pr, --print-result` | An optional parameter that, if provided, will cause a summary of the results obtained from the analysis to be printed on the terminal. |
 |`-wr, --write-result` | An optional parameter that determines whether the results obtained from the analysis of individual files are saved to disk. <br> Accepts as values: `ask`, `skip`, `always`. <br> Default: `ask`, asks for confirmation. |
 |`-fr, --format-result` | An optional parameter that determines the format with which the obtained data is saved. <br> Accepts as values: `json`, `csv`. <br> Default: `json`. |
+|`--debug-analysis` | An optional parameter that, if provided, will perform a debug analysis of the AST. |
 
 For example, wanting to analyze a smart-contract in order to detect the use of the Ownership pattern, it is necessary to execute the command:
 
