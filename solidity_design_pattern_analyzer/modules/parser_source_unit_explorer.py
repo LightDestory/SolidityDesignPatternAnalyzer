@@ -9,7 +9,8 @@ from .solidity_parser.parser import ObjectifyContractVisitor
 class SourceUnitExplorer:
     _statement_operand_types: list[str] = [
         "MemberAccess", "NumberLiteral", "stringLiteral", "Identifier", "ElementaryTypeName", "ArrayTypeName",
-        "BooleanLiteral", "UserDefinedTypeName", "HexLiteral", "IndexAccess", "HexNumber", "DecimalNumber", "hexLiteral", "StringLiteral"
+        "BooleanLiteral", "UserDefinedTypeName", "HexLiteral", "IndexAccess", "HexNumber", "DecimalNumber",
+        "hexLiteral", "StringLiteral", "LabelDefinition"
     ]
 
     _fixed_data_type_byte_sizes: dict[str, int] = {
@@ -373,6 +374,8 @@ class SourceUnitExplorer:
                 return self.build_node_string(wrapped_operand)
             case "Identifier" | "ElementaryTypeName":
                 return wrapped_operand["name"]
+            case "LabelDefinition":
+                return f"{wrapped_operand['name']}:"
             case "NumberLiteral":
                 value: str = str(wrapped_operand["number"])
                 if wrapped_operand["subdenomination"]:
