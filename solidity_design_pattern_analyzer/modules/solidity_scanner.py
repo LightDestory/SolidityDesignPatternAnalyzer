@@ -1,6 +1,6 @@
 import logging
 import pprint
-
+import re
 from termcolor import colored
 
 from .parser_source_unit_explorer import SourceUnitExplorer
@@ -199,24 +199,21 @@ class SolidityScanner:
         :param search_in: The list of items to search on
         :return: True if there is a match, False otherwise
         """
-        string_patters: list[str] = list(sorted(filter(lambda d: "*" in d, search_for)))
-        if string_patters:
+        regex_patterns: list[str] = list(sorted(filter(lambda d: "_regex:" in d, search_for)))
+        if regex_patterns:
+            regex_patterns = list(map(lambda x: x.replace("_regex:", ""), regex_patterns))
             if settings.verbose:
-                logging.debug("%s '%s'", colored("Checking descriptor's string patterns:", "magenta"),
-                              colored(pprint.pformat(string_patters), "cyan"))
-            for pattern_str in string_patters:
-                if "*any*" in pattern_str:
-                    pattern_str = pattern_str[:pattern_str.index("*any*")]
-                else:
-                    pattern_str = pattern_str.replace("*", "")
+                logging.debug("%s '%s'", colored("Checking descriptor's regex patterns:", "magenta"),
+                              colored(','.join(regex_patterns), "cyan"))
+            for pattern_str in regex_patterns:
                 for smart_contract_item in sorted(search_in):
-                    if pattern_str in smart_contract_item:
+                    if re.match(pattern_str, smart_contract_item):
                         return True, smart_contract_item
-        string_literals: list[str] = list(sorted(filter(lambda d: "*" not in d, search_for)))
+        string_literals: list[str] = list(sorted(filter(lambda d: "_regex:" not in d, search_for)))
         if string_literals:
             if settings.verbose:
                 logging.debug("%s '%s'", colored("Checking descriptor's string literals:", "magenta"),
-                              colored(pprint.pformat(string_literals), "cyan"))
+                              colored(','.join(string_literals), "cyan"))
             for item in string_literals:
                 for smart_contract_item in sorted(search_in):
                     if item == smart_contract_item:
@@ -268,7 +265,7 @@ class SolidityScanner:
         smart_contract_comparisons: list[dict] = self._source_unit_explorer.get_all_comparison_statements(
             self._current_smart_contract_definitions, self._reverse_comparison_operand_map)
         smart_contract_operation_description: list[tuple] = list()
-        if not smart_contract_comparisons:
+        if not smart_contract_comparisons and settings.verbose:
             logging.debug((colored("No comparisons found", "magenta")))
             return {"result": False}
         if settings.verbose:
@@ -321,10 +318,10 @@ class SolidityScanner:
             fn_call_statements = self._source_unit_explorer.get_all_statements(self._current_smart_contract_definitions,
                                                                                type_filter="FunctionCall")
         smart_contract_function_calls: dict[str, str] = {}
-        for fn in fn_call_statements:
-            fn_stringfy: str = self._source_unit_explorer.build_node_string(fn).lower()
+        for statement in fn_call_statements:
+            fn_stringfy: str = self._source_unit_explorer.build_node_string(statement).lower()
             if fn_stringfy not in smart_contract_function_calls:
-                smart_contract_function_calls[fn_stringfy] = str(fn["loc"]["start"]["line"])
+                smart_contract_function_calls[fn_stringfy] = str(statement["loc"]["start"]["line"])
         unique_function_calls: set[str] = set(map(lambda d: d.lower(), function_calls))
         result, trigger = self._compare_literal(search_for=unique_function_calls,
                                                 search_in=set(smart_contract_function_calls.keys()))
@@ -343,7 +340,7 @@ class SolidityScanner:
         if len(smart_contract_functions) == 1 \
                 and smart_contract_functions[0].lower() == "fallback" \
                 and self._current_smart_contract_node.functions["fallback"].isFallback:
-            return self._test_fn_call_check(function_calls=["revert(*any*)"])
+            return self._test_fn_call_check(function_calls=["_regex:revert\\(.*\\)"])
         return {"result": False}
 
     def _test_fn_return_parameters_check(self, provided_parameters: list[dict]) -> dict[str, bool | str]:
@@ -419,7 +416,8 @@ class SolidityScanner:
                 assignments[assignment_stringfy] = assignment["loc"]["start"]["line"]
         unique_state_names: set[str] = set(map(lambda d: d.lower(), state_names))
         for boolean_state in boolean_states:
-            if self._compare_literal(search_for=unique_state_names, search_in={boolean_state}):
+            result, trigger = self._compare_literal(search_for=unique_state_names, search_in={boolean_state})
+            if result:
                 for assignment_str, assignment_loc in assignments.items():
                     if f"{boolean_state} = !{boolean_state}" == assignment_str:
                         return {"result": True, "line_match": assignment_loc, "match_statement": assignment_str}
@@ -468,7 +466,7 @@ class SolidityScanner:
         This function executes the check_effects_interaction check: it looks for an assignment before a external fn_call
         :return: True if the check_effects_interaction check is valid, False otherwise
         """
-        callable_fn: set[str] = {"send(*any*)", "transfer(*any*)", "call(*any*)"}
+        callable_fn: set[str] = {"_regex:send\\(.*\\)", "_regex:transfer\\(.*\\)", "_regex:call\\(.*\\)"}
         fn_data: dict[str, dict[str, list[int]]] = {}
         for fn_name, fn_statements in self._current_smart_contract_definitions["functions"].items():
             fn_data[fn_name] = {"fn_call_position": [], "assignment_position": []}
@@ -477,7 +475,8 @@ class SolidityScanner:
                 assignments: list[dict] = self._source_unit_explorer.find_node_by_type(statement, "BinaryOperation")
                 for fn_call in fn_calls:
                     fn_call_string: str = self._source_unit_explorer.build_node_string(fn_call).lower()
-                    if self._compare_literal(callable_fn, {fn_call_string}):
+                    result, _ = self._compare_literal(callable_fn, {fn_call_string})
+                    if result:
                         fn_data[fn_name]["fn_call_position"].append(fn_call["loc"]["start"]["line"])
                 for assignment in assignments:
                     if assignment["operator"] in self._assignment_operands:
@@ -495,7 +494,7 @@ class SolidityScanner:
         This function executes the relay check: it looks if the contract implements a fallback with a delegatecall
         :return: True if the relay check is valid, False otherwise
         """
-        relay_fn_call: str = "delegatecall(*any*)"
+        relay_fn_call: str = "delegatecall\\(.*\\)"
         smart_contract_functions: list[str] = list(self._source_unit_explorer.get_fn_names(
             self._current_smart_contract_node))
         if "fallback" in smart_contract_functions and self._current_smart_contract_node.functions[

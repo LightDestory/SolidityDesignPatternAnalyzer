@@ -3,11 +3,15 @@
     "checks": [
         {
             "check_type": "inheritance",
-            "parent_names": ["AccessRestriction", "restrictable*", "Pausable"]
+            "parent_names": [
+                "AccessRestriction", "Pausable",
+                "_regex:restrictable.*"
+            ]
         },
         {
             "check_type": "modifier",
-            "modifiers": ["when*", "after*", "before*","only*", "if*", "on*", "haltin*", "disablein*", "enablein*"]
+            "modifiers": ["_regex:when.*", "_regex:after.*", "_regex:before.*","_regex:only.*", "_regex:if.*",
+                "_regex:on.*", "_regex:haltin.*", "_regex:disablein.*", "_regex:enablein.*"]
         }
     ]
 }

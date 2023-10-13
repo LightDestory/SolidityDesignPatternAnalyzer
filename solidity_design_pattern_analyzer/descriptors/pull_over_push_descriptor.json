@@ -8,8 +8,8 @@
         {
             "check_type": "fn_call",
             "callable_function": [
-                "transfer(*any*)",
-                "safeTransfer(*any*)"
+                "_regex:transfer\\(.*\\)",
+                "_regex:safeTransfer\\(.*\\)"
             ]
         }
     ]
