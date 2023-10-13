@@ -3,7 +3,7 @@
     "checks": [
         {
             "check_type": "fn_call",
-            "callable_function": ["_regex:query\\(.*\\)", "_regex:reply\\(.*\\)"]
+            "callable_function": ["_regex:.*query\\(.*\\)", "_regex:.*reply\\(.*\\)"]
         },
         {
             "check_type": "fn_definition",
@@ -11,7 +11,7 @@
         },
         {
             "check_type": "event_emit",
-            "event_names": ["_regex:request.*"]
+            "event_names": ["_regex:.*request.*"]
         }
     ]
 }

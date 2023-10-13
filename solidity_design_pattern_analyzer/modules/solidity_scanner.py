@@ -335,12 +335,11 @@ class SolidityScanner:
         This function executes the rejector check: it looks if the contract implements only a rejection fallback
         :return: True if the rejector check is valid, False otherwise
         """
-        smart_contract_functions: list[str] = list(
-            self._source_unit_explorer.get_fn_names(self._current_smart_contract_node))
-        if len(smart_contract_functions) == 1 \
-                and smart_contract_functions[0].lower() == "fallback" \
-                and self._current_smart_contract_node.functions["fallback"].isFallback:
-            return self._test_fn_call_check(function_calls=["_regex:revert\\(.*\\)"])
+        smart_contract_functions: dict[str, str] = self._source_unit_explorer.get_fn_names(
+            self._current_smart_contract_node)
+        if len(smart_contract_functions) == 1:
+            if "fallback" in smart_contract_functions or "function()" in smart_contract_functions:
+                return self._test_fn_call_check(function_calls=["_regex:revert\\(.*\\)"])
         return {"result": False}
 
     def _test_fn_return_parameters_check(self, provided_parameters: list[dict]) -> dict[str, bool | str]:
@@ -466,7 +465,7 @@ class SolidityScanner:
         This function executes the check_effects_interaction check: it looks for an assignment before a external fn_call
         :return: True if the check_effects_interaction check is valid, False otherwise
         """
-        callable_fn: set[str] = {"_regex:send\\(.*\\)", "_regex:transfer\\(.*\\)", "_regex:call\\(.*\\)"}
+        callable_fn: set[str] = {"_regex:.*send\\(.*\\)", "_regex:.*transfer\\(.*\\)", "_regex:.*call\\(.*\\)"}
         fn_data: dict[str, dict[str, list[int]]] = {}
         for fn_name, fn_statements in self._current_smart_contract_definitions["functions"].items():
             fn_data[fn_name] = {"fn_call_position": [], "assignment_position": []}
@@ -494,11 +493,15 @@ class SolidityScanner:
         This function executes the relay check: it looks if the contract implements a fallback with a delegatecall
         :return: True if the relay check is valid, False otherwise
         """
-        relay_fn_call: str = "delegatecall\\(.*\\)"
+        relay_fn_call: str = "_regex:.*delegatecall\\(.*\\)"
         smart_contract_functions: list[str] = list(self._source_unit_explorer.get_fn_names(
-            self._current_smart_contract_node))
-        if "fallback" in smart_contract_functions and self._current_smart_contract_node.functions[
-            "fallback"].isFallback:
+            self._current_smart_contract_node).keys())
+        fallback_fn: str = ""
+        if "fallback" in smart_contract_functions:
+            fallback_fn = "fallback"
+        if "function()" in smart_contract_functions:
+            fallback_fn = [x for x in smart_contract_functions if "function()" in x][0]
+        if fallback_fn:
             fn_call_statements: list[dict] = self._source_unit_explorer.filter_statements_pool(
                 statements_pool=self._current_smart_contract_definitions["functions"]["fallback"],
                 type_filter="FunctionCall")
