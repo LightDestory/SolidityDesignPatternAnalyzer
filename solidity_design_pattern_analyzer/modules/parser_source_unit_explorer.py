@@ -31,8 +31,6 @@ class SourceUnitExplorer:
             logging.debug(colored(f"Collecting statements...", "magenta"))
         collector: dict[str, dict[str, list[dict]]] = {"functions": {}, "modifiers": {}}
         for fn_name, fn_node in smart_contract_node.functions.items():
-            if "function()" in fn_name:
-                fn_name = "fallback"
             if not fn_node._node.body:
                 continue
             collector["functions"][fn_name.lower()] = fn_node._node.body.statements
@@ -110,8 +108,6 @@ class SourceUnitExplorer:
         smart_contract_functions: dict[str, str] = {}
         for fn_name, fn_body in smart_contract_node.functions.items():
             name: str = fn_name.lower()
-            if "function()" in fn_name:
-                name = "fallback"
             if name not in smart_contract_functions:
                 smart_contract_functions[name] = fn_body._node.loc["start"]["line"]
         return smart_contract_functions
@@ -269,8 +265,12 @@ class SourceUnitExplorer:
                     collector += self.find_node_by_type(statement, type_filter)
                 return collector
             case "VariableDeclarationStatement":
-                return self.find_node_by_type(node["initialValue"], type_filter) + self.find_node_by_type(
-                    node["variables"], type_filter)
+                var_collector = []
+                for var in node["variables"]:
+                    var_collector += self.find_node_by_type(var, type_filter)
+                return self.find_node_by_type(node["initialValue"], type_filter) + var_collector
+            case "VariableDeclaration":
+                return self.find_node_by_type(node["typeName"], type_filter) if "typeName" in node else []
             case "BinaryOperation":
                 return self.find_node_by_type(node["left"], type_filter) + \
                     self.find_node_by_type(node["right"], type_filter)
@@ -278,10 +278,15 @@ class SourceUnitExplorer:
                 return self.find_node_by_type(node["subExpression"], type_filter)
             case "Conditional":
                 return self.find_node_by_type(node["condition"], type_filter)
+            case "TupleExpression":
+                components = []
+                for component in node["components"]:
+                    components += self.find_node_by_type(component, type_filter)
+                return components
             case "UncheckedStatement":
                 return self.find_node_by_type(node['body'], type_filter)
             case _ if node_type in ["ContinueStatement", "BreakStatement", "NewExpression",
-                                    "TupleExpression", "ThrowStatement"] + self._statement_operand_types:
+                                    "ThrowStatement"] + self._statement_operand_types:
                 return []
             case "InLineAssemblyStatement":
                 return self.find_node_by_type(node["body"], type_filter)
@@ -314,6 +319,19 @@ class SourceUnitExplorer:
                 return self.find_node_by_type(node["expression"], type_filter) + cases_collector
             case "AssemblyCase":
                 return self.find_node_by_type(node["block"], type_filter)
+            case "AssemblyFor":
+                return self.find_node_by_type(node["pre"], type_filter) + \
+                    self.find_node_by_type(node["condition"], type_filter) + \
+                    self.find_node_by_type(node["post"], type_filter) + \
+                    self.find_node_by_type(node["body"], type_filter)
+            case "FunctionTypeName":
+                params = []
+                for param in node["parameterTypes"]:
+                    params += self.find_node_by_type(param, type_filter)
+                returns = []
+                for ret in node["returnTypes"]:
+                    returns += self.find_node_by_type(ret, type_filter)
+                return params + returns
             case _:
                 pprint.pprint(node)
                 raise ValueError(f"Unknown navigation route for {node_type}")
@@ -392,6 +410,8 @@ class SourceUnitExplorer:
                 return wrapped_operand["namePath"]
             case "IndexAccess":
                 return f"{self.build_node_string(wrapped_operand['base'])}[{self.build_node_string(wrapped_operand['index'])}]"
+            case "TupleExpression":
+                return self.build_tuple_string(wrapped_operand)
             case _:
                 raise ValueError(f"Unsupported operand type: {operand_type}")
 
