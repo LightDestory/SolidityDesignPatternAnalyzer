@@ -207,7 +207,7 @@ class SolidityScanner:
                               colored(','.join(regex_patterns), "cyan"))
             for pattern_str in regex_patterns:
                 for smart_contract_item in sorted(search_in):
-                    if re.match(pattern_str, smart_contract_item):
+                    if re.search(pattern_str, smart_contract_item):
                         return True, smart_contract_item
         string_literals: list[str] = list(sorted(filter(lambda d: "_regex:" not in d, search_for)))
         if string_literals:
@@ -465,7 +465,7 @@ class SolidityScanner:
         This function executes the check_effects_interaction check: it looks for an assignment before a external fn_call
         :return: True if the check_effects_interaction check is valid, False otherwise
         """
-        callable_fn: set[str] = {"_regex:.*send\\(.*\\)", "_regex:.*transfer\\(.*\\)", "_regex:.*call\\(.*\\)"}
+        callable_fn: set[str] = {"_regex:send\\(.*\\)", "_regex:transfer\\(.*\\)", "_regex:call\\(.*\\)"}
         fn_data: dict[str, dict[str, list[int]]] = {}
         for fn_name, fn_statements in self._current_smart_contract_definitions["functions"].items():
             fn_data[fn_name] = {"fn_call_position": [], "assignment_position": []}
@@ -493,7 +493,7 @@ class SolidityScanner:
         This function executes the relay check: it looks if the contract implements a fallback with a delegatecall
         :return: True if the relay check is valid, False otherwise
         """
-        relay_fn_call: str = "_regex:.*delegatecall\\(.*\\)"
+        relay_fn_call: str = "_regex:delegatecall\\(.*\\)"
         smart_contract_functions: list[str] = list(self._source_unit_explorer.get_fn_names(
             self._current_smart_contract_node).keys())
         fallback_fn: str = ""

@@ -13,7 +13,7 @@
         },
         {
             "check_type": "event_emit",
-            "event_names": ["_regex:logcommit.*", "_regex:logreveal.*"]
+            "event_names": ["_regex:logcommit", "_regex:logreveal"]
         }
     ]
 }

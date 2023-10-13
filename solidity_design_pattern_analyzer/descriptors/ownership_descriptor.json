@@ -3,7 +3,7 @@
     "checks": [
         {
             "check_type": "inheritance",
-            "parent_names": ["_regex:ownable.*", "ownership", "owner"]
+            "parent_names": ["ownable", "ownership", "owner"]
         },
         {
             "check_type": "modifier",

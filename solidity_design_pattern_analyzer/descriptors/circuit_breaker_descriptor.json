@@ -7,7 +7,7 @@
         },
         {
             "check_type": "state_toggle",
-            "state_names": ["_regex:paused.*","_regex:stopped.*", "_regex:active.*", "_regex:running.*", "_regex:disable.*"]
+            "state_names": ["_regex:paused","_regex:stopped", "_regex:active", "_regex:running", "_regex:disable"]
         },
         {
             "check_type": "fn_definition",
