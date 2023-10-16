@@ -14,6 +14,11 @@
             "fn_names": [
                 "nextstage"
             ]
+        },
+        {
+            "check_type": "fn_call",
+            "callable_function": [
+                "_regex:nextstage\\(.*\\)"]
         }
     ]
 }

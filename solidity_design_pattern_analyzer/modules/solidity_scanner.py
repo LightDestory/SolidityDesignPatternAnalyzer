@@ -337,9 +337,8 @@ class SolidityScanner:
         """
         smart_contract_functions: dict[str, str] = self._source_unit_explorer.get_fn_names(
             self._current_smart_contract_node)
-        if len(smart_contract_functions) == 1:
-            if "fallback" in smart_contract_functions or "function()" in smart_contract_functions:
-                return self._test_fn_call_check(function_calls=["_regex:revert\\(.*\\)"])
+        if "fallback" in smart_contract_functions or any("function()" in fn_name for fn_name in smart_contract_functions):
+            return self._test_fn_call_check(function_calls=["_regex:revert\\(.*\\)"])
         return {"result": False}
 
     def _test_fn_return_parameters_check(self, provided_parameters: list[dict]) -> dict[str, bool | str]:
@@ -499,11 +498,11 @@ class SolidityScanner:
         fallback_fn: str = ""
         if "fallback" in smart_contract_functions:
             fallback_fn = "fallback"
-        if "function()" in smart_contract_functions:
+        if any("function()" in fn_name for fn_name in smart_contract_functions):
             fallback_fn = [x for x in smart_contract_functions if "function()" in x][0]
         if fallback_fn:
             fn_call_statements: list[dict] = self._source_unit_explorer.filter_statements_pool(
-                statements_pool=self._current_smart_contract_definitions["functions"]["fallback"],
+                statements_pool=self._current_smart_contract_definitions["functions"][fallback_fn],
                 type_filter="FunctionCall")
             return self._test_fn_call_check(function_calls=[relay_fn_call], fn_call_statements=fn_call_statements)
         return {"result": False}

@@ -4,7 +4,7 @@
         {
             "check_type": "fn_call",
             "callable_function": [
-                "_regex:commit\\(.*\\)", "_regex:reveal\\(.*\\)"
+                "_regex:commit\\(.*\\)", "_regex:reveal\\(.*\\)", "_regex:tracecommit\\(.*\\)"
             ]
         },
         {

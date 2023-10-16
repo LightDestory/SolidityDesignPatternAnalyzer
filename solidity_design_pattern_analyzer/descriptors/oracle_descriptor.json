@@ -10,8 +10,12 @@
             "fn_names": ["query", "reply"]
         },
         {
+            "check_type": "var_definition",
+            "var_names": ["oracleaddr", "oracle_addr", "o_addr"]
+        },
+        {
             "check_type": "event_emit",
-            "event_names": ["_regex:request"]
+            "event_names": ["_regex:request$", "_regex:response$"]
         }
     ]
 }

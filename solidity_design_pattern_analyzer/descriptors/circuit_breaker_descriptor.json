@@ -11,7 +11,13 @@
         },
         {
             "check_type": "fn_definition",
-            "fn_names": ["toggleContractStopped"]
+            "fn_names": ["toggleContractStopped", "pause", "unpause"]
+        },
+        {
+            "check_type": "fn_call",
+            "callable_function": [
+                "_regex:toggleContractStopped\\(.*\\)", "_regex:pause\\(.*\\)", "_regex:unpause\\(.*\\)"
+            ]
         },
         {
             "check_type": "modifier",
