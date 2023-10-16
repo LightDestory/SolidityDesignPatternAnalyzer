@@ -3,11 +3,11 @@
     "checks": [
         {
             "check_type": "modifier",
-            "modifiers": ["atstage"]
+            "modifiers": ["atstage", "stateis", "inState"]
         },
         {
             "check_type": "enum_definition",
-            "enum_names": ["_regex:stage"]
+            "enum_names": ["_regex:^stage.*", "_regex:^state.*"]
         },
         {
             "check_type": "fn_definition",
