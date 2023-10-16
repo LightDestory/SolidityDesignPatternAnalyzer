@@ -99,7 +99,7 @@ def main() -> None:
             execution_callable(target_path=inputs["target"])
         else:
             target_directory: Path = Path(inputs["target"])
-            for target_file in target_directory.glob("**/*.sol"):
+            for target_file in sorted(target_directory.glob('**/*.sol'), key=lambda x: len(x.name)):
                 execution_callable(target_path=str(target_file))
             if settings.execution_mode == "analyze":
                 save_batch_analysis_results(batch_result_collector, target_directory)
