@@ -39,8 +39,8 @@ def execute_analysis(target_path: str) -> None:
         else:
             logging.info(colored("Generating design pattern descriptors...", "yellow"))
             computation_results = scanner.generate_design_pattern_descriptors()
-    except Exception | ValueError as e:
-        logging.error(colored(f"Execution interrupted by: {str(e)}", "red"))
+    except Exception as e:
+        logging.error(colored(f"Execution interrupted by: {e}", "red"))
         return
     if not computation_results:
         logging.error(colored("The computation did not produce any results!, aborting...", "red"))

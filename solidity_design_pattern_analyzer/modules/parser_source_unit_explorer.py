@@ -31,9 +31,7 @@ class SourceUnitExplorer:
             logging.debug(colored(f"Collecting statements...", "magenta"))
         collector: dict[str, dict[str, list[dict]]] = {"functions": {}, "modifiers": {}}
         for fn_name, fn_node in smart_contract_node.functions.items():
-            if not fn_node._node.body:
-                continue
-            collector["functions"][fn_name.lower()] = fn_node._node.body.statements
+            collector["functions"][fn_name.lower()] = fn_node._node.body.statements if fn_node._node.body else []
         for modifier_name, modifier_node in smart_contract_node.modifiers.items():
             collector["modifiers"][modifier_name.lower()] = modifier_node._node.body.statements
         if settings.verbose:
@@ -46,14 +44,27 @@ class SourceUnitExplorer:
                             "\t%s %s", colored("Rebuilt statement:", "magenta"), colored(result, "cyan"))
         return collector
 
-    def get_all_bool_state_vars(self, smart_contract_node: ObjectifyContractVisitor) -> set[str]:
+    def get_all_state_vars_names(self, smart_contract_node: ObjectifyContractVisitor, type_name_filter: str = "") -> \
+            dict[str, str]:
         """
         This function returns the name of all the boolean state vars of the specified smart-contract
         :param smart_contract_node: The node of the smart contract to analyze
+        :param type_name_filter: A filter to et only specific state vars based on type name
         :return: A set of state vars names
         """
-        return set([k.lower() for k, v in smart_contract_node.stateVars.items() if
-                    "name" in v["typeName"] and v["typeName"]["name"] == "bool"])
+        state_vars: dict[str, str] = {}
+        for state_var_node in smart_contract_node.stateVars.values():
+            if state_var_node["typeName"]["type"] == "ElementaryTypeName":
+                var_type: str = state_var_node["typeName"]["name"].lower()
+            else:
+                var_type: str = state_var_node["typeName"]["type"].lower()
+            if type_name_filter and var_type != type_name_filter.lower():
+                continue
+            name: str = state_var_node["name"].lower() if "name" in state_var_node and state_var_node["name"] else ""
+            loc: str = state_var_node.loc["start"]["line"]
+            if name not in state_vars:
+                state_vars[name] = loc
+        return state_vars
 
     def get_all_mapping_state_vars(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, dict[str, str]]:
         """
@@ -111,6 +122,22 @@ class SourceUnitExplorer:
             if name not in smart_contract_functions:
                 smart_contract_functions[name] = fn_body._node.loc["start"]["line"]
         return smart_contract_functions
+
+    def get_var_names(self, smart_contract_node: ObjectifyContractVisitor,
+                      smart_contract_definitions: dict[str, dict[str, list[dict]]]) -> dict[str, str]:
+        """
+        This function returns the variable names defined in the specified smart-contract, both state and inside functions
+        :param smart_contract_node: The node of the smart contract to analyze
+        :param smart_contract_definitions: The definitions of the smart-contract to analyze
+        :return: A set of variable names
+        """
+        smart_contract_vars: dict[str, str] = self.get_all_state_vars_names(smart_contract_node=smart_contract_node)
+        for var_declaration in self.get_all_statements(smart_contract_definitions=smart_contract_definitions,
+                                                       type_filter="VariableDeclaration"):
+            name: str = var_declaration["name"] if "name" in var_declaration and var_declaration["name"] else ""
+            if name and name not in smart_contract_vars:
+                smart_contract_vars[name] = var_declaration.loc["start"]["line"]
+        return smart_contract_vars
 
     def get_event_names(self, smart_contract_node: ObjectifyContractVisitor) -> dict[str, str]:
         """

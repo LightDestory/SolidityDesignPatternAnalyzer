@@ -5,13 +5,13 @@
             "check_type": "inheritance",
             "parent_names": [
                 "AccessRestriction", "Pausable",
-                "_regex:restrictable.*"
+                "_regex:restrictable.*", "SimpleReadAccessController", "SimpleWriteAccessController"
             ]
         },
         {
             "check_type": "modifier",
             "modifiers": ["_regex:^when.*", "_regex:^after.*", "_regex:^before.*","_regex:^only.*", "_regex:^if.*",
-                "_regex:^on.*", "_regex:^haltin.*", "_regex:^disablein.*", "_regex:^enablein.*"]
+                "_regex:^on.*", "_regex:^haltin.*", "_regex:^disablein.*", "_regex:^enablein.*", "checkaccess"]
         }
     ]
 }

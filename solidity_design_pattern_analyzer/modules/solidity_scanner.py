@@ -15,8 +15,8 @@ class SolidityScanner:
     _source_unit_explorer: SourceUnitExplorer = SourceUnitExplorer()
     _implemented_tests: list[str]
     _generic_tests: list[str] = [
-        "comparison", "inheritance", "modifier", "fn_return_parameters", "fn_call", "fn_definition", "event_emit",
-        "enum_definition", "state_toggle"
+        "comparison", "inheritance", "modifier", "fn_return_parameters", "fn_call", "fn_definition", "var_definition",
+        "event_emit", "enum_definition", "state_toggle"
     ]
     _specialized_tests: list[str] = [
         "rejector", "tight_variable_packing", "memory_array_building", "check_effects_interaction", "relay",
@@ -152,6 +152,8 @@ class SolidityScanner:
                     check_result = self._test_fn_call_check(function_calls=check["callable_function"])
                 case "fn_definition":
                     check_result = self._test_fn_definition_check(fn_names=check["fn_names"])
+                case "var_definition":
+                    check_result = self._test_var_definition_check(var_names=check["var_names"])
                 case "event_emit":
                     check_result = self._test_event_emit_check(event_names=check["event_names"])
                 case "enum_definition":
@@ -307,7 +309,8 @@ class SolidityScanner:
                                     "match_statement": f"{smart_contract_operand_1} {smart_contract_operator} {smart_contract_operand_2}"}
         return {"result": False}
 
-    def _test_fn_call_check(self, function_calls: list[str], fn_call_statements: list[dict] = None) -> dict[str, bool | str]:
+    def _test_fn_call_check(self, function_calls: list[str], fn_call_statements: list[dict] = None) -> dict[
+        str, bool | str]:
         """
         This function executes the fn_call check: it looks for specific functions call
         :param function_calls: A list of function calls
@@ -337,7 +340,8 @@ class SolidityScanner:
         """
         smart_contract_functions: dict[str, str] = self._source_unit_explorer.get_fn_names(
             self._current_smart_contract_node)
-        if "fallback" in smart_contract_functions or any("function()" in fn_name for fn_name in smart_contract_functions):
+        if "fallback" in smart_contract_functions or any(
+                "function()" in fn_name for fn_name in smart_contract_functions):
             return self._test_fn_call_check(function_calls=["_regex:revert\\(.*\\)"])
         return {"result": False}
 
@@ -363,12 +367,30 @@ class SolidityScanner:
         :return: True if the fn_definition check is valid, False otherwise
         """
         unique_fn_names: set[str] = set(map(lambda d: d.lower(), fn_names))
-        smart_contract_fn_names: dict[str, str] = self._source_unit_explorer.get_fn_names(self._current_smart_contract_node)
-        result, trigger = self._compare_literal(search_for=unique_fn_names, search_in=set(smart_contract_fn_names.keys()))
+        smart_contract_fn_names: dict[str, str] = self._source_unit_explorer.get_fn_names(
+            self._current_smart_contract_node)
+        result, trigger = self._compare_literal(search_for=unique_fn_names,
+                                                search_in=set(smart_contract_fn_names.keys()))
         if not result:
             return {"result": False}
         else:
             return {"result": True, "line_match": smart_contract_fn_names[trigger], "match_statement": trigger}
+
+    def _test_var_definition_check(self, var_names: list[str]) -> dict[str, bool | str]:
+        """
+        This function executes the var_definition check: it looks for definition of variable with a specific name
+        :param var_names: A list of variable names
+        :return: True if the var_definition check is valid, False otherwise
+        """
+        unique_var_names: set[str] = set(map(lambda d: d.lower(), var_names))
+        smart_contract_var_names: dict[str, str] = self._source_unit_explorer.get_var_names(
+            self._current_smart_contract_node, self._current_smart_contract_definitions)
+        result, trigger = self._compare_literal(search_for=unique_var_names,
+                                                search_in=set(smart_contract_var_names.keys()))
+        if not result:
+            return {"result": False}
+        else:
+            return {"result": True, "line_match": smart_contract_var_names[trigger], "match_statement": trigger}
 
     def _test_event_emit_check(self, event_names: list[str]) -> dict[str, bool | str]:
         """
@@ -377,9 +399,10 @@ class SolidityScanner:
         :return: True if the event_emit check is valid, False otherwise
         """
         smart_contract_events_names: dict[str, str] = self._source_unit_explorer.get_event_names(
-                                                            self._current_smart_contract_node)
+            self._current_smart_contract_node)
         unique_event_names: set[str] = set(map(lambda d: d.lower(), event_names))
-        result, trigger = self._compare_literal(search_for=unique_event_names, search_in=set(smart_contract_events_names.keys()))
+        result, trigger = self._compare_literal(search_for=unique_event_names,
+                                                search_in=set(smart_contract_events_names.keys()))
         if not result:
             return {"result": False}
         else:
@@ -392,9 +415,10 @@ class SolidityScanner:
         :return: True if the enum_definition check is valid, False otherwise
         """
         smart_contract_enum_names: dict[str, str] = self._source_unit_explorer.get_enum_names(
-                                                          self._current_smart_contract_node)
+            self._current_smart_contract_node)
         unique_enum_names = set(map(lambda d: d.lower(), enum_names))
-        result, trigger = self._compare_literal(search_for=unique_enum_names, search_in=set(smart_contract_enum_names.keys()))
+        result, trigger = self._compare_literal(search_for=unique_enum_names,
+                                                search_in=set(smart_contract_enum_names.keys()))
         if not result:
             return {"result": False}
         else:
@@ -405,8 +429,9 @@ class SolidityScanner:
         This function executes the state_toggle check: it looks for boolean state variable toggles
         :return: True if the state_toggle check is valid, False otherwise
         """
-        boolean_states: set[str] = self._source_unit_explorer.get_all_bool_state_vars(self._current_smart_contract_node)
-        assignments: dict[str,str] = {}
+        boolean_states: set[str] = set(self._source_unit_explorer.get_all_state_vars_names(
+            self._current_smart_contract_node, type_name_filter="bool").keys())
+        assignments: dict[str, str] = {}
         for assignment in self._source_unit_explorer.get_all_assignment_statements(
                 self._current_smart_contract_definitions, self._assignment_operands):
             assignment_stringfy: str = self._source_unit_explorer.build_node_string(assignment).lower()
@@ -483,7 +508,7 @@ class SolidityScanner:
                                fn_data.keys()):
             for assignment_position in fn_data[filtered]["assignment_position"]:
                 for fn_call_position in fn_data[filtered]["fn_call_position"]:
-                    if (assignment_position + 5) >= fn_call_position:
+                    if (fn_call_position - assignment_position) in range(1, 7):
                         return {"result": True, "line_match": assignment_position, "match_statement": "Check Block"}
         return {"result": False}
 
@@ -516,7 +541,8 @@ class SolidityScanner:
             self._current_smart_contract_node)
         if not smart_contract_mappings:
             return {"result": False}
-        smart_contract_fn_names: set[str] = set(self._source_unit_explorer.get_fn_names(self._current_smart_contract_node).keys())
+        smart_contract_fn_names: set[str] = set(
+            self._source_unit_explorer.get_fn_names(self._current_smart_contract_node).keys())
         for mapping_name, mapping_data in smart_contract_mappings.items():
             if mapping_data["visibility"] == "public":
                 if f"set{mapping_name}" in smart_contract_fn_names:
@@ -592,17 +618,25 @@ class SolidityScanner:
                                                self._current_smart_contract_definitions, type_filter="FunctionCall")])
                     test_keyword = "callable_function"
                 case "fn_definition":
-                    test_parameters = set(self._source_unit_explorer.get_fn_names(self._current_smart_contract_node).keys())
+                    test_parameters = set(
+                        self._source_unit_explorer.get_fn_names(self._current_smart_contract_node).keys())
                     test_keyword = "fn_names"
+                case "var_definition":
+                    test_parameters = set(
+                        self._source_unit_explorer.get_var_names(
+                            self._current_smart_contract_node, self._current_smart_contract_definitions).keys())
+                    test_keyword = "var_names"
                 case "event_emit":
-                    test_parameters = set(self._source_unit_explorer.get_event_names(self._current_smart_contract_node).keys())
+                    test_parameters = set(
+                        self._source_unit_explorer.get_event_names(self._current_smart_contract_node).keys())
                     test_keyword = "event_names"
                 case "enum_definition":
-                    test_parameters = set(self._source_unit_explorer.get_enum_names(self._current_smart_contract_node).keys())
+                    test_parameters = set(
+                        self._source_unit_explorer.get_enum_names(self._current_smart_contract_node).keys())
                     test_keyword = "enum_names"
                 case "state_toggle":
-                    test_parameters = self._source_unit_explorer.get_all_bool_state_vars(
-                        self._current_smart_contract_node)
+                    test_parameters = set(self._source_unit_explorer.get_all_state_vars_names(
+                        self._current_smart_contract_node, type_name_filter="bool").keys())
                     test_keyword = "state_names"
                 case _:
                     logging.error(f"{test_name}  not implemented")
@@ -621,11 +655,21 @@ class SolidityScanner:
             node = self._visitor.contracts[contract]
             logging.info("%s '%s'", colored("Parsing contract: ", "yellow"), colored(contract, "cyan"))
             defs = self._source_unit_explorer.collect_definitions(node)
-            logging.info("%s '%s'", colored("BaseContracts: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_base_contract_names(node)), "cyan"))
-            logging.info("%s '%s'", colored("Mappings: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_all_mapping_state_vars(node)), "cyan"))
-            logging.info("%s '%s'", colored("BoolStates: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_all_bool_state_vars(node)), "cyan"))
-            logging.info("%s '%s'", colored("Modifiers: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_modifier_names(node)), "cyan"))
-            logging.info("%s '%s'", colored("FNs: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_fn_names(node)), "cyan"))
-            logging.info("%s '%s'", colored("Events: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_event_names(node)), "cyan"))
-            logging.info("%s '%s'", colored("Enums: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_enum_names(node)), "cyan"))
-            logging.info("%s '%s'", colored("All FN's RTNP: ", "yellow"), colored(pprint.pformat(self._source_unit_explorer.get_all_fn_return_parameters(node)), "cyan"))
+            logging.info("%s '%s'", colored("BaseContracts: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_base_contract_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Mappings: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_all_mapping_state_vars(node)), "cyan"))
+            logging.info("%s '%s'", colored("StateVarNams: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_all_state_vars_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Modifiers: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_modifier_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("FNs: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_fn_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Events: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_event_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("Enums: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_enum_names(node)), "cyan"))
+            logging.info("%s '%s'", colored("All FN's RTNP: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_all_fn_return_parameters(node)), "cyan"))
+            logging.info("%s '%s'", colored("Declared Variables: ", "yellow"),
+                         colored(pprint.pformat(self._source_unit_explorer.get_var_names(node, defs)), "cyan"))

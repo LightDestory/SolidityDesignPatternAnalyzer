@@ -216,6 +216,29 @@
             "properties": {
               "check_type": {
                 "type": "string",
+                "const": "var_definition"
+              },
+              "var_names": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "uniqueItems": true,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "check_type",
+              "var_names"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "check_type": {
+                "type": "string",
                 "const": "event_emit"
               },
               "event_names": {

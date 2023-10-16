@@ -11,7 +11,7 @@
         },
         {
             "check_type": "var_definition",
-            "var_names": ["oracleaddr", "oracle_addr", "o_addr"]
+            "var_names": ["_regex:oracleaddr.*", "_regex:oracle_addr.*", "_regex:o_addr.*"]
         },
         {
             "check_type": "event_emit",

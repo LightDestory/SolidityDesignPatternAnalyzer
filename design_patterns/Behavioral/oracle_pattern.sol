@@ -28,7 +28,7 @@ contract Oracle {
 }
 // Oracle consumer
 contract OracleConsumer {
-    Oracle oracle = Oracle(address(0x4321)); // known contract oracle
+    Oracle oracle_addr = Oracle(address(0x4321)); // known contract oracle
     modifier onlyBy(address account) { 
         require(msg.sender == account);  _; 
     }
